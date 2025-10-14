@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LexiFlow Legal Advisory Assistant</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="logo">
+        <span class="logo-mark">⚖️</span>
+        <span class="logo-text">LexiFlow</span>
+      </div>
+      <nav>
+        <a href="#auth">Account</a>
+        <a href="#assistant">AI Legal Assistant</a>
+        <a href="#plans">Plans</a>
+      </nav>
+      <button class="cta-button">Try LexiFlow</button>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-content">
+          <h1>Deliver instant, trustworthy legal guidance for your SaaS customers</h1>
+          <p>
+            Bring identity verification, agentic AI conversations, and curated attorney matching together so teams can resolve compliance and contract issues with confidence.
+          </p>
+          <div class="hero-actions">
+            <button class="primary">Start Free</button>
+            <button class="secondary">Watch Demo</button>
+          </div>
+          <div class="trust-badges">
+            <span>GDPR & ISO27001 Ready</span>
+            <span>99.9% SLA</span>
+            <span>Trusted by 120+ legal teams</span>
+          </div>
+        </div>
+        <div class="hero-illustration">
+          <div class="chart-card">
+            <h3>Legal Risk Radar</h3>
+            <div class="radar">
+              <div class="radar-ring ring-1"></div>
+              <div class="radar-ring ring-2"></div>
+              <div class="radar-ring ring-3"></div>
+            </div>
+            <p>Gain live visibility into privacy, contract, and labor compliance risk areas.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="auth" class="auth-panel">
+        <div class="auth-tabs">
+          <button class="tab active" data-target="login-form">Sign In</button>
+          <button class="tab" data-target="signup-form">Create Account</button>
+          <button class="tab" data-target="verification-info">Email Verification</button>
+        </div>
+        <div class="auth-forms">
+          <form id="login-form" class="form active">
+            <h2>Welcome back</h2>
+            <label>
+              Work email
+              <input type="email" placeholder="you@company.com" required />
+            </label>
+            <label>
+              Password
+              <input type="password" placeholder="******" required />
+            </label>
+            <div class="form-row">
+              <label class="checkbox">
+                <input type="checkbox" />
+                Remember me
+              </label>
+              <a href="#" class="link">Forgot password?</a>
+            </div>
+            <button type="submit" class="primary">Sign In</button>
+          </form>
+
+          <form id="signup-form" class="form">
+            <h2>Create your team account</h2>
+            <label>
+              Company name
+              <input type="text" placeholder="e.g. Nebula Labs" required />
+            </label>
+            <label>
+              Work email
+              <input type="email" placeholder="legal@company.com" required />
+            </label>
+            <label>
+              Set password
+              <input type="password" placeholder="Min. 8 characters, letters & numbers" required />
+            </label>
+            <label>
+              Choose plan
+              <select>
+                <option>Starter — ¥299 / month</option>
+                <option>Growth — ¥699 / month</option>
+                <option>Elite — ¥1499 / month</option>
+              </select>
+            </label>
+            <button type="submit" class="primary">Register & send verification email</button>
+            <p class="terms">
+              By continuing you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+            </p>
+          </form>
+
+          <div id="verification-info" class="form">
+            <h2>Email verification flow</h2>
+            <ol>
+              <li>We send a one-time verification code to your work inbox, valid for 5 minutes.</li>
+              <li>Enter the code during your first sign-in to complete email verification.</li>
+              <li>Optional: enable SSO or MFA to harden your workspace security.</li>
+            </ol>
+            <button class="secondary">Resend verification email</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="assistant" class="assistant-section">
+        <div class="assistant-header">
+          <div>
+            <h2>LexiFlow Agentic Legal Assistant</h2>
+            <p>
+              Our AI tracks conversation context, cites regulations, and escalates to domain experts automatically when needed.
+            </p>
+          </div>
+          <div class="context-pills">
+            <span class="pill">Context memory</span>
+            <span class="pill">Attorney matching</span>
+            <span class="pill">Regulation citations</span>
+          </div>
+        </div>
+
+        <div class="assistant-layout">
+          <aside class="case-summary">
+            <h3>Case summary</h3>
+            <div class="summary-item">
+              <span class="label">Industry</span>
+              <span class="value">Cross-border eCommerce</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Current status</span>
+              <span class="value danger">Data transfer risk flagged</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">AI suggested path</span>
+              <p class="value">
+                Map data processing flows → align with destination market privacy laws → prepare filings aligned to GDPR and PIPL.
+              </p>
+            </div>
+            <div class="summary-item">
+              <span class="label">Suggested attorney</span>
+              <div class="lawyer-card">
+                <span class="avatar">KM</span>
+                <div>
+                  <p>Karen Meng</p>
+                  <small>Data compliance · 8 yrs experience · Shanghai</small>
+                </div>
+                <button class="secondary small">Book</button>
+              </div>
+            </div>
+          </aside>
+
+          <section class="chat-window">
+            <header class="chat-header">
+              <div>
+                <h3>Conversation</h3>
+                <small>Auto-generating a compliance checklist</small>
+              </div>
+              <button class="secondary small">Export report</button>
+            </header>
+            <div class="chat-history">
+              <div class="chat-message user">
+                <div class="meta">
+                  <span>You · 09:02</span>
+                </div>
+                <p>We're planning to sync user data to our Singapore cluster. What compliance requirements apply?</p>
+              </div>
+              <div class="chat-message ai">
+                <div class="meta">
+                  <span>LexiFlow · 09:02</span>
+                </div>
+                <p>
+                  I reviewed PIPL Chapter 3 and Singapore's PDPA. You should first document your cross-border transfer flow and prepare a DPIA.
+                </p>
+                <div class="keyword-tags">
+                  <span>#PIPL</span>
+                  <span>#PDPA</span>
+                  <span>#DPIA</span>
+                </div>
+              </div>
+              <div class="chat-message ai follow-up">
+                <div class="meta">
+                  <span>LexiFlow · 09:03</span>
+                </div>
+                <p>Based on your SaaS footprint, I found three data compliance specialists in our attorney pool. Want to schedule a 30-minute diagnostic?</p>
+                <div class="lawyer-suggestions">
+                  <button class="primary small">Book Karen</button>
+                  <button class="secondary small">Browse others</button>
+                </div>
+              </div>
+            </div>
+            <form class="chat-input">
+              <label>
+                <span>Ask a question</span>
+                <textarea
+                  placeholder="For example: What contract updates are needed before launching a new feature in the US?"
+                ></textarea>
+              </label>
+              <div class="input-actions">
+                <label class="checkbox">
+                  <input type="checkbox" checked />
+                  Sync to team knowledge base
+                </label>
+                <button type="submit" class="primary">Send</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </section>
+
+      <section id="plans" class="plans-section">
+        <div class="section-intro">
+          <h2>Choose your subscription</h2>
+          <p>From startups to global enterprises, each plan unlocks a deeper level of compliance automation and attorney support.</p>
+        </div>
+        <div class="plans-grid">
+          <article class="plan-card">
+            <h3>Starter</h3>
+            <p class="price">¥299 / month</p>
+            <ul>
+              <li>50 AI conversations per month</li>
+              <li>Core contract template library</li>
+              <li>Email verification + 2FA</li>
+              <li>eSignature integration</li>
+            </ul>
+            <button class="secondary">Start trial</button>
+          </article>
+          <article class="plan-card featured">
+            <h3>Growth</h3>
+            <p class="price">¥699 / month</p>
+            <ul>
+              <li>Unlimited AI conversations</li>
+              <li>Persistent context + team workspace</li>
+              <li>Specialized regulatory playbooks</li>
+              <li>4 hours of attorney consultation monthly</li>
+            </ul>
+            <button class="primary">Most popular</button>
+          </article>
+          <article class="plan-card enterprise">
+            <h3>Elite</h3>
+            <p class="price">¥1499 / month</p>
+            <ul>
+              <li>Dedicated compliance strategist</li>
+              <li>Priority attorney response</li>
+              <li>Custom AI prompts & API access</li>
+              <li>Compliance audits & training</li>
+            </ul>
+            <button class="secondary">Book a demo</button>
+          </article>
+        </div>
+        <div class="add-ons">
+          <h4>Optional add-ons</h4>
+          <div class="chips">
+            <span>Multi-jurisdiction monitoring</span>
+            <span>Enterprise knowledge base ingest</span>
+            <span>Automated contract review</span>
+            <span>Litigation risk alerts</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="testimonials">
+        <h2>Customer stories</h2>
+        <div class="testimonial-grid">
+          <figure>
+            <blockquote>
+              “LexiFlow quadrupled our contract review velocity, and every attorney match has been spot on.”
+            </blockquote>
+            <figcaption>— Founder, SaaS X</figcaption>
+          </figure>
+          <figure>
+            <blockquote>
+              “The AI remembers every detail. When a human attorney joins, the handoff is seamless.”
+            </blockquote>
+            <figcaption>— Head of Compliance, FinTech Y</figcaption>
+          </figure>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-left">
+        <div class="logo">
+          <span class="logo-mark">⚖️</span>
+          <span class="logo-text">LexiFlow</span>
+        </div>
+        <p>We help high-growth companies build sustainable, scalable compliance capabilities.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#">Security whitepaper</a>
+        <a href="#">Attorney partner program</a>
+        <a href="#">Contact us</a>
+      </div>
+      <div class="footer-actions">
+        <label class="newsletter">
+          <span>Subscribe to product updates</span>
+          <input type="email" placeholder="work@company.com" />
+        </label>
+        <button class="primary small">Subscribe</button>
+      </div>
+    </footer>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>

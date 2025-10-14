@@ -1,19 +1,71 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell.jsx";
-import { Hero } from "../components/dashboard/Hero.jsx";
-import { AssistantConsole } from "../components/dashboard/AssistantConsole.jsx";
-import { PlanSelector } from "../components/dashboard/PlanSelector.jsx";
-import { Testimonials } from "../components/dashboard/Testimonials.jsx";
-import { AssistantProvider } from "../state/assistantContext.jsx";
+import { AssistantProvider, useAssistant } from "../state/assistantContext.jsx";
 import { useAuth } from "../state/authContext.jsx";
 import { subscriptionTiers } from "../data/subscriptions.js";
-import "../components/dashboard/dashboard.css";
+import { WorkspaceSnapshot } from "../components/workspace/WorkspaceSnapshot.jsx";
+import { DocumentIntake } from "../components/workspace/DocumentIntake.jsx";
+import { PaperworkPanel } from "../components/workspace/PaperworkPanel.jsx";
+import { AttorneySpotlight } from "../components/workspace/AttorneySpotlight.jsx";
+import { AgentChat } from "../components/workspace/AgentChat.jsx";
+import "../components/workspace/workspace.css";
+
+const DashboardContent = ({ user, currentPlan, onPlanChange, planStatus }) => {
+  const { usage, summary } = useAssistant();
+  const greeting = user?.companyName ?? "LexiFlow workspace";
+
+  return (
+    <div className="container workspace-page">
+      <header className="workspace-header">
+        <div className="workspace-intro">
+          <h1>Welcome back, {greeting}</h1>
+          <p className="muted">
+            Track legal operations in one place: monitor usage, review generated paperwork, and continue the
+            conversation with LexiFlow&apos;s agentic assistant.
+          </p>
+          <div className="usage-badges">
+            <span className="usage-badge">{user?.verified ? "Verified workspace" : "Verification pending"}</span>
+            <span className="usage-badge">Current risk: {summary.risk}</span>
+          </div>
+        </div>
+        <div className="workspace-plan">
+          <span className="muted">Subscription snapshot</span>
+          <strong>{currentPlan.name}</strong>
+          <span className="muted">
+            {new Intl.NumberFormat("en-US", { style: "currency", currency: currentPlan.currency }).format(
+              currentPlan.price
+            )}{" "}
+            / {currentPlan.cadence}
+          </span>
+          <p className="muted" style={{ margin: 0 }}>
+            Next steps: {summary.nextSteps[0]}
+          </p>
+        </div>
+      </header>
+
+      <div className="workspace-grid">
+        <WorkspaceSnapshot
+          user={user}
+          currentPlan={currentPlan}
+          usage={usage}
+          onPlanChange={onPlanChange}
+          planStatus={planStatus}
+        />
+        <DocumentIntake />
+        <PaperworkPanel />
+        <AttorneySpotlight />
+      </div>
+
+      <AgentChat />
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const { user, isAuthenticated, changePlan, status } = useAuth();
   const navigate = useNavigate();
-  const [planStatus, setPlanStatus] = useState({ loading: false, message: "" });
+  const [planStatus, setPlanStatus] = useState("");
 
   useEffect(() => {
     if (!isAuthenticated && status !== "loading") {
@@ -26,46 +78,28 @@ const Dashboard = () => {
     [user]
   );
 
-  const needsVerification = Boolean(user) && !user.verified;
-
   const handlePlanSelect = async (planId) => {
     if (!user || planId === user.subscription) return;
-    setPlanStatus({ loading: true, message: "" });
+    const planName = subscriptionTiers.find((tier) => tier.id === planId)?.name ?? planId;
+    setPlanStatus("Switching plan...");
     try {
       await changePlan(planId);
-      setPlanStatus({ loading: false, message: "Plan updated successfully." });
+      setPlanStatus(`Plan updated to ${planName}.`);
     } catch (error) {
-      setPlanStatus({ loading: false, message: error.message });
+      setPlanStatus(error.message);
     }
   };
 
   return (
     <AppShell>
-      <div className="page">
-        <Hero subscription={currentPlan} verified={Boolean(user?.verified)} />
-        {needsVerification ? (
-          <div className="container surface" style={{ marginBottom: "2rem" }}>
-            <h3>Action required: verify your workspace</h3>
-            <p className="muted">
-              We still need you to confirm the code we sent to <strong>{user.email}</strong>. Verifying enables exports,
-              attorney calls, and knowledge base sync.
-            </p>
-            <button className="btn btn-secondary" onClick={() => navigate("/verify-email")}>
-              Go to verification
-            </button>
-          </div>
-        ) : null}
-        <AssistantProvider>
-          <AssistantConsole />
-        </AssistantProvider>
-        <PlanSelector activePlan={user?.subscription} onSelect={handlePlanSelect} />
-        {planStatus.message ? (
-          <p className="container muted" style={{ marginTop: "0.5rem" }}>
-            {planStatus.message}
-          </p>
-        ) : null}
-        <Testimonials />
-      </div>
+      <AssistantProvider>
+        <DashboardContent
+          user={user}
+          currentPlan={currentPlan}
+          onPlanChange={handlePlanSelect}
+          planStatus={planStatus}
+        />
+      </AssistantProvider>
     </AppShell>
   );
 };

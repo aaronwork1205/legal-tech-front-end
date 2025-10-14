@@ -3,9 +3,8 @@ import { useAuth } from "../../state/authContext.jsx";
 import "./layout.css";
 
 const navItems = [
-  { to: "/dashboard", label: "Overview" },
-  { to: "/dashboard#assistant", label: "AI Assistant" },
-  { to: "/dashboard#plans", label: "Plans" },
+  { to: "/dashboard", label: "Dashboard" },
+  { to: "/assistant", label: "AI Workspace" },
   { to: "/demo", label: "Demo Lab" }
 ];
 

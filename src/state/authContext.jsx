@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useReducer, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState } from "react";
 import { clearSession, login, readSession, register, updateSubscription, verifyEmail } from "../services/authService.js";
 
 const AuthContext = createContext(null);
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
     setInitialised(true);
   }, []);
 
-  const handleLogin = async (credentials) => {
+  const handleLogin = useCallback(async (credentials) => {
     dispatch({ type: "LOGIN_REQUEST" });
     try {
       const user = await login(credentials);
@@ -54,9 +54,9 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: "ERROR", payload: error.message });
       throw error;
     }
-  };
+  }, []);
 
-  const handleRegister = async (payload) => {
+  const handleRegister = useCallback(async (payload) => {
     dispatch({ type: "REGISTER_REQUEST" });
     try {
       const user = await register(payload);
@@ -66,9 +66,9 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: "ERROR", payload: error.message });
       throw error;
     }
-  };
+  }, []);
 
-  const handleVerify = async (payload) => {
+  const handleVerify = useCallback(async (payload) => {
     dispatch({ type: "VERIFY_REQUEST" });
     try {
       const user = await verifyEmail(payload);
@@ -78,25 +78,28 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: "ERROR", payload: error.message });
       throw error;
     }
-  };
+  }, []);
 
-  const handlePlanChange = async (plan) => {
-    if (!state.user) return null;
-    dispatch({ type: "PLAN_REQUEST" });
-    try {
-      const user = await updateSubscription({ email: state.user.email, plan });
-      dispatch({ type: "PLAN_SUCCESS", payload: user });
-      return user;
-    } catch (error) {
-      dispatch({ type: "ERROR", payload: error.message });
-      throw error;
-    }
-  };
+  const handlePlanChange = useCallback(
+    async (plan) => {
+      if (!state.user) return null;
+      dispatch({ type: "PLAN_REQUEST" });
+      try {
+        const user = await updateSubscription({ email: state.user.email, plan });
+        dispatch({ type: "PLAN_SUCCESS", payload: user });
+        return user;
+      } catch (error) {
+        dispatch({ type: "ERROR", payload: error.message });
+        throw error;
+      }
+    },
+    [state.user]
+  );
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     clearSession();
     dispatch({ type: "LOGOUT" });
-  };
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -112,7 +115,7 @@ export const AuthProvider = ({ children }) => {
       logout: handleLogout,
       initialised
     }),
-    [state, initialised]
+    [state, initialised, handleLogin, handleRegister, handleVerify, handlePlanChange, handleLogout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

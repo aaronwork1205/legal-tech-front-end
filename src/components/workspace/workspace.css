@@ -1,0 +1,295 @@
+.workspace-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2.4rem;
+  padding: 2.4rem 0 3.6rem;
+}
+
+.workspace-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.workspace-header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 2.6rem);
+}
+
+.workspace-intro {
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.workspace-plan {
+  min-width: 240px;
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 1.2rem 1.4rem;
+  box-shadow: 0 18px 28px rgba(15, 28, 60, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.workspace-plan strong {
+  font-size: 1.15rem;
+}
+
+.workspace-plan select {
+  width: 100%;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.6rem;
+}
+
+.workspace-card {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 1.6rem;
+  box-shadow: 0 20px 36px rgba(13, 22, 58, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.workspace-card--wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 960px) {
+  .workspace-card--wide {
+    grid-column: span 1;
+  }
+}
+
+.workspace-card header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.workspace-card header h3 {
+  margin: 0;
+}
+
+.workspace-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.workspace-metric {
+  background: var(--surface-alt);
+  border-radius: 14px;
+  padding: 0.95rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.workspace-metric span {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.workspace-metric strong {
+  font-size: 1.2rem;
+}
+
+.document-upload {
+  border: 1px dashed rgba(53, 71, 255, 0.35);
+  border-radius: 16px;
+  padding: 1.4rem 1.2rem;
+  text-align: center;
+  background: rgba(53, 71, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.document-upload__button {
+  align-self: center;
+}
+
+.upload-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.upload-item {
+  border-radius: 14px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  padding: 1rem 1.1rem;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.upload-item__meta {
+  display: flex;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.upload-item__highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.upload-chip {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(53, 71, 255, 0.12);
+  color: var(--primary);
+  font-size: 0.78rem;
+}
+
+.paperwork-card {
+  background: rgba(17, 24, 39, 0.04);
+  border-radius: 16px;
+  padding: 1.2rem 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.paperwork-card footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.agent-chat {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 1.8rem;
+  box-shadow: 0 24px 46px rgba(13, 22, 58, 0.08);
+  display: grid;
+  gap: 1.6rem;
+}
+
+.agent-chat__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.agent-chat__history {
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-right: 0.4rem;
+}
+
+.agent-chat__bubble {
+  border-radius: 18px;
+  padding: 1rem 1.2rem;
+  background: rgba(17, 24, 39, 0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.agent-chat__bubble.user {
+  margin-left: auto;
+  background: rgba(53, 71, 255, 0.16);
+}
+
+.agent-chat__meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.agent-chat__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.agent-chat__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.agent-chat__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.agent-chat__form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.attorney-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.attorney-card {
+  border-radius: 16px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.attorney-card__meta {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.attorney-card footer {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.usage-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.usage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(53, 71, 255, 0.1);
+  color: var(--primary);
+  font-size: 0.78rem;
+}
+
+.agent-chat__empty {
+  text-align: center;
+  padding: 1.8rem 1.2rem;
+  background: rgba(17, 24, 39, 0.05);
+  border-radius: 16px;
+  color: var(--muted);
+}

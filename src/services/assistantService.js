@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { v4 as uuid } from "uuid";
+import { derivePaperwork } from "./paperworkService.js";
 
 const regulatoryMap = [
   { keyword: "gdpr", citation: "GDPR Art. 44 – Cross-border data transfer" },
@@ -47,6 +48,19 @@ export const converse = async ({ message, thread }) => {
     replySegments.push("Let me outline the immediate steps, then suggest an attorney for deeper work.");
   }
 
+  const paperwork = derivePaperwork({
+    input: message,
+    source: "conversation",
+    metadata: {
+      contextSnippet: message.slice(0, 240),
+      threadLength: thread.length + 1
+    }
+  });
+
+  if (paperwork) {
+    replySegments.push(`I drafted a ${paperwork.title.toLowerCase()}. Download the sample to review required clauses.`);
+  }
+
   const followUp = "Would you like me to invite a specialist from our verified attorney pool?";
   replySegments.push(followUp);
 
@@ -71,7 +85,8 @@ export const converse = async ({ message, thread }) => {
   return {
     aiMessage,
     recommendations,
-    updatedSummary
+    updatedSummary,
+    paperwork
   };
 };
 

@@ -103,6 +103,7 @@ const pipeline = [
 const DemoShowcase = () => {
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const [typedText, setTypedText] = useState("");
+  const [activeStep, setActiveStep] = useState(0);
 
   const scenario = scenarios[scenarioIndex];
 
@@ -123,15 +124,74 @@ const DemoShowcase = () => {
   useEffect(() => {
     const cycle = setInterval(() => {
       setScenarioIndex((prev) => (prev + 1) % scenarios.length);
-    }, 8000);
+    }, 10000);
     return () => clearInterval(cycle);
   }, []);
+
+  const agentSteps = useMemo(
+    () => [
+      {
+        id: "classify",
+        title: "Classify intake & entities",
+        description: `Understands this request as ${scenario.title.toLowerCase()} and extracts people, jurisdictions, and deadlines from the intake.`
+      },
+      {
+        id: "regulations",
+        title: "Scan regulations & templates",
+        description: `Fetches guidance from ${scenario.regulatory.join(", ")}; maps clauses into our template library.`
+      },
+      {
+        id: "paperwork",
+        title: "Assemble paperwork bundle",
+        description: `Auto-fills ${scenario.documents.map((doc) => doc.name).join(", ")} with user-supplied data and compliance checkpoints.`
+      },
+      {
+        id: "counsel",
+        title: "Match specialist counsel",
+        description: `Scores attorneys by history in ${scenario.lawyerFocus}, availability, and rating before presenting quick actions.`
+      }
+    ],
+    [scenario]
+  );
+
+  useEffect(() => {
+    setActiveStep(0);
+    const timer = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % agentSteps.length);
+    }, 2400);
+    return () => clearInterval(timer);
+  }, [agentSteps]);
 
   const activeLawyers = useMemo(() => {
     if (scenario.id === "immigration") return lawyerBench.slice(0, 2);
     if (scenario.id === "tax") return lawyerBench.slice(0, 2);
     return [lawyerBench[1], lawyerBench[2]];
   }, [scenario.id]);
+
+  const handleScenarioSwitch = (index) => {
+    setScenarioIndex(index);
+  };
+
+  const handleDownload = (doc) => {
+    const blob = buildDocumentPdf({
+      scenarioTitle: scenario.title,
+      intake: scenario.intake,
+      docName: doc.name,
+      docDetails: doc.details,
+      lawyerFocus: scenario.lawyerFocus,
+      sources: scenario.regulatory
+    });
+
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    const safeName = doc.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    anchor.download = `${safeName || "lexiflow-document"}.pdf`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  };
 
   return (
     <AppShell>
@@ -145,6 +205,19 @@ const DemoShowcase = () => {
                 real estate scenarios. Every field below is auto-populated from the user&apos;s inputs and live
                 regulatory sources.
               </p>
+            </div>
+            <div className="scenario-tabs">
+              {scenarios.map((item, index) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`scenario-tab ${index === scenarioIndex ? "active" : ""}`}
+                  onClick={() => handleScenarioSwitch(index)}
+                  aria-pressed={index === scenarioIndex}
+                >
+                  {item.title.split("·")[0].trim()}
+                </button>
+              ))}
             </div>
             <div className="demo-cta">
               <Link className="btn btn-secondary" to="/login">
@@ -192,13 +265,48 @@ const DemoShowcase = () => {
                     <small>Draft ready for review</small>
                   </header>
                   <p style={{ margin: 0 }}>{doc.details}</p>
-                  <button className="btn btn-secondary" style={{ justifySelf: "flex-start" }}>
-                    Preview & download
+                  <button
+                    className="btn btn-secondary"
+                    style={{ justifySelf: "flex-start" }}
+                    type="button"
+                    onClick={() => handleDownload(doc)}
+                  >
+                    Generate PDF
                   </button>
                 </article>
               ))}
             </div>
           </div>
+
+          <section className="agent-flow">
+            <header>
+              <h2 className="section-title">How the agent handles this case</h2>
+              <p className="muted">
+                Steps light up as the workflow runs: parsing the intake, crawling trusted sources, assembling paperwork,
+                and presenting counsel—all without leaving your dashboard.
+              </p>
+            </header>
+            <div className="agent-timeline">
+              {agentSteps.map((step, index) => (
+                <article
+                  key={step.id}
+                  className={`agent-step ${index === activeStep ? "active" : ""} ${
+                    index < activeStep ? "completed" : ""
+                  }`}
+                >
+                  <h3>{step.title}</h3>
+                  <p>{step.description}</p>
+                </article>
+              ))}
+            </div>
+            <div className="source-pulse">
+              {scenario.regulatory.map((source) => (
+                <span key={source} className="pulse-chip">
+                  {source}
+                </span>
+              ))}
+            </div>
+          </section>
 
           <section style={{ display: "grid", gap: "1.5rem" }}>
             <header>
@@ -277,3 +385,85 @@ const DemoShowcase = () => {
 };
 
 export default DemoShowcase;
+
+const buildDocumentPdf = ({ scenarioTitle, intake, docName, docDetails, lawyerFocus, sources }) => {
+  if (typeof window === "undefined") {
+    return new Blob();
+  }
+
+  const wrapText = (text, width = 70) => {
+    const words = text.split(" ");
+    const lines = [];
+    let current = "";
+    words.forEach((word) => {
+      const candidate = current ? `${current} ${word}` : word;
+      if (candidate.length > width) {
+        if (current) lines.push(current);
+        current = word;
+      } else {
+        current = candidate;
+      }
+    });
+    if (current) lines.push(current);
+    return lines;
+  };
+
+  const escapePdfText = (text) => text.replace(/[\\()]/g, (match) => `\\${match}`);
+
+  const lines = [];
+  lines.push("BT");
+  lines.push("/F1 18 Tf");
+  lines.push("60 780 Td");
+  lines.push(`(${escapePdfText(docName)}) Tj`);
+
+  const addParagraph = (text, { lineHeight = 16, initialOffset = 24, bullet = false } = {}) => {
+    const textLines = Array.isArray(text) ? text : wrapText(text);
+    textLines.forEach((line, index) => {
+      const offset = index === 0 ? initialOffset : lineHeight;
+      const prefix = bullet && index === 0 ? "• " : bullet ? "  " : "";
+      lines.push(`0 -${offset} Td`);
+      lines.push(`(${escapePdfText(`${prefix}${line}`)}) Tj`);
+    });
+  };
+
+  lines.push("/F1 11 Tf");
+  addParagraph(`Scenario: ${scenarioTitle}`);
+  addParagraph(intake, { initialOffset: 20 });
+  addParagraph(`Focus counsel: ${lawyerFocus}`, { initialOffset: 20 });
+  addParagraph(docDetails, { initialOffset: 20, bullet: true });
+  addParagraph("Key sources:", { initialOffset: 24 });
+  sources.forEach((source) => addParagraph(source, { initialOffset: 16, bullet: true }));
+  lines.push("ET");
+
+  const encoder = new TextEncoder();
+  const stream = lines.join("\n") + "\n";
+  const streamBytes = encoder.encode(stream);
+
+  const objects = [
+    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
+    "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
+    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj",
+    `4 0 obj << /Length ${streamBytes.length} >> stream\n${stream}endstream\nendobj`,
+    "5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj"
+  ];
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  let position = encoder.encode(pdf).length;
+
+  objects.forEach((object) => {
+    offsets.push(position);
+    pdf += `${object}\n`;
+    position += encoder.encode(`${object}\n`).length;
+  });
+
+  const xrefStart = position;
+  pdf += `xref\n0 ${offsets.length}\n`;
+  pdf += "0000000000 65535 f \n";
+  offsets.slice(1).forEach((offset) => {
+    pdf += `${offset.toString().padStart(10, "0")} 00000 n \n`;
+  });
+  pdf += `trailer << /Root 1 0 R /Size ${offsets.length} >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+  return new Blob([pdf], { type: "application/pdf" });
+};

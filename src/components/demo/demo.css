@@ -109,6 +109,7 @@
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(10, 15, 38, 0.1);
   animation: float 6s ease-in-out infinite;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
 
 .doc-card:nth-child(2) {
@@ -130,6 +131,112 @@
   border-radius: 20px;
   border: 1px solid rgba(53, 71, 255, 0.12);
   pointer-events: none;
+}
+
+.doc-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 30px 55px rgba(8, 14, 42, 0.16);
+}
+
+.scenario-tabs {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.scenario-tab {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.scenario-tab.active {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-3px);
+}
+
+.agent-flow {
+  margin-top: 2.4rem;
+  display: grid;
+  gap: 1.2rem;
+}
+
+.agent-timeline {
+  display: grid;
+  gap: 1rem;
+}
+
+.agent-step {
+  position: relative;
+  padding: 1.1rem 1.3rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(53, 71, 255, 0.1);
+  box-shadow: 0 15px 35px rgba(10, 18, 48, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border 0.3s ease;
+}
+
+.agent-step::before {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(53, 71, 255, 0.35);
+  left: -22px;
+  top: 1.4rem;
+  box-shadow: 0 0 0 6px rgba(53, 71, 255, 0.12);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.agent-step.active {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 45px rgba(10, 18, 48, 0.16);
+  border-color: rgba(53, 71, 255, 0.35);
+}
+
+.agent-step.active::before {
+  background: var(--primary);
+  box-shadow: 0 0 0 10px rgba(53, 71, 255, 0.2);
+  animation: beacon 1.6s ease-in-out infinite;
+}
+
+.agent-step.completed::before {
+  background: var(--primary);
+  box-shadow: 0 0 0 4px rgba(53, 71, 255, 0.18);
+}
+
+.agent-step h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.agent-step p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+.source-pulse {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.pulse-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(53, 71, 255, 0.12);
+  color: var(--primary);
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  animation: glow 3s ease-in-out infinite;
 }
 
 .lawyer-bench {
@@ -264,6 +371,26 @@
   }
   50% {
     transform: translateY(-6px);
+  }
+}
+
+@keyframes beacon {
+  0%,
+  100% {
+    box-shadow: 0 0 0 6px rgba(53, 71, 255, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(53, 71, 255, 0.08);
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    background: rgba(53, 71, 255, 0.12);
+  }
+  50% {
+    background: rgba(53, 71, 255, 0.25);
   }
 }
 

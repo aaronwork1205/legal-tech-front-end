@@ -3,9 +3,9 @@ package database
 import (
 	"log"
 
-	"lexiflow/backend/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"lexiflow/backend/internal/models"
 )
 
 func Connect(dsn string) *gorm.DB {
@@ -14,7 +14,7 @@ func Connect(dsn string) *gorm.DB {
 		log.Fatalf("failed to connect database: %v", err)
 	}
 
-	if err := db.AutoMigrate(&models.User{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Session{}, &models.VerificationToken{}); err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
 

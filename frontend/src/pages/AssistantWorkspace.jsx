@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/layout/AppShell.jsx";
 import { AssistantProvider, useAssistant } from "../state/assistantContext.jsx";
 import { useAuth } from "../state/authContext.jsx";
@@ -22,8 +22,66 @@ const CaseSection = ({ title, items = [], renderItem, emptyText }) => (
   </div>
 );
 
+const CaseCreatedModal = ({ caseData, onClose }) => {
+  if (!caseData) return null;
+
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="case-created-title">
+      <div className="modal-card">
+        <header className="modal-card__header">
+          <h3 id="case-created-title">Case created</h3>
+          <button type="button" className="link" onClick={onClose}>
+            Close
+          </button>
+        </header>
+        <p className="muted" style={{ marginTop: 0 }}>
+          {caseData.name} is now ready. Stakeholders can upload supporting documents, chat with the assistant, and
+          review tailored paperwork from this workspace.
+        </p>
+        <dl className="modal-card__summary">
+          <div>
+            <dt>Owner</dt>
+            <dd>{caseData.owner ?? "Unassigned"}</dd>
+          </div>
+          <div>
+            <dt>Priority</dt>
+            <dd>{caseData.priority ?? "Medium"}</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>{caseData.status ?? "Active"}</dd>
+          </div>
+        </dl>
+        <footer className="modal-card__footer">
+          <button type="button" className="btn btn-primary" onClick={onClose}>
+            Go to case
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
 const AssistantWorkspaceContent = ({ user }) => {
-  const { summary, usage, cases, createCase, activeCase, setActiveCase } = useAssistant();
+  const {
+    summary,
+    usage,
+    cases,
+    createCase,
+    activeCase,
+    setActiveCase,
+    uploadDocument,
+    uploading,
+    paperwork,
+    paperworkLog,
+    messages,
+    sendMessage,
+    processing,
+    error
+  } = useAssistant();
+  const [isCreatingCase, setIsCreatingCase] = useState(false);
+  const [newlyCreatedCase, setNewlyCreatedCase] = useState(null);
+  const [chatInput, setChatInput] = useState("");
   const userLabel = user?.companyName ?? user?.email ?? "your team";
   const hasCases = cases.length > 0;
   const hasActiveCase = Boolean(activeCase);
@@ -37,10 +95,33 @@ const AssistantWorkspaceContent = ({ user }) => {
     }
   }, [activeCase, cases, setActiveCase]);
 
+  const startCaseCreation = () => setIsCreatingCase(true);
+  const cancelCaseCreation = () => setIsCreatingCase(false);
+  const closeCaseCreatedModal = () => setNewlyCreatedCase(null);
+
   const handleNewCase = (payload) => {
     const created = createCase(payload);
     setActiveCase(created.id);
+    setIsCreatingCase(false);
+    setNewlyCreatedCase(created);
+    return created;
   };
+
+  const handleChatSubmit = (event) => {
+    event.preventDefault();
+    if (!chatInput.trim()) return;
+    sendMessage(chatInput);
+    setChatInput("");
+  };
+
+  const handleDocumentUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await uploadDocument(file);
+    event.target.value = "";
+  };
+
+  const recentPaperwork = paperwork ?? paperworkLog?.[0] ?? null;
 
   const stakeholders = activeCase?.stakeholders ?? [];
   const caseDocuments = activeCase?.documents ?? [];
@@ -65,15 +146,24 @@ const AssistantWorkspaceContent = ({ user }) => {
         </div>
       </header>
 
-      <section className="workspace-card workspace-card--full case-create-section">
-        <header className="case-section__header">
-          <div>
-            <h3>Create a new case</h3>
-            <p className="muted">Capture stakeholders, documents, and milestones before handing off to LexiFlow.</p>
-          </div>
-        </header>
-        <CaseCreationForm onSubmit={handleNewCase} showCancel={false} showHeader={false} />
-      </section>
+      {isCreatingCase ? (
+        <CaseCreationForm onSubmit={handleNewCase} onCancel={cancelCaseCreation} />
+      ) : (
+        <section className="workspace-card workspace-card--full case-create-section">
+          <header className="case-section__header">
+            <div>
+              <h3>Create a new case</h3>
+              <p className="muted">Capture stakeholders, documents, and milestones before handing off to LexiFlow.</p>
+            </div>
+            <button type="button" className="btn btn-primary" onClick={startCaseCreation}>
+              Create new case
+            </button>
+          </header>
+          <p className="muted" style={{ margin: 0 }}>
+            Launch a workspace for your matter when you are ready to organise stakeholders, files, and timelines.
+          </p>
+        </section>
+      )}
 
       <section className="workspace-card workspace-card--full case-manager">
         <header className="case-section__header">
@@ -185,6 +275,85 @@ const AssistantWorkspaceContent = ({ user }) => {
                       )}
                     />
                   </div>
+                  <div className="case-manager__support">
+                    <section className="case-support-card">
+                      <header>
+                        <h5>Upload documents</h5>
+                        <p className="muted">Share context with the assistant and attorneys.</p>
+                      </header>
+                      <label className="upload-dropzone">
+                        <input type="file" onChange={handleDocumentUpload} disabled={uploading} />
+                        <span>{uploading ? "Processing upload..." : "Click or drop files to add them"}</span>
+                      </label>
+                      {error ? <p className="error-text">{error}</p> : null}
+                    </section>
+                    <section className="case-support-card">
+                      <header>
+                        <h5>AI conversation</h5>
+                        <p className="muted">Ask for next steps or summaries and keep the case thread alive.</p>
+                      </header>
+                      <div className="case-chat">
+                        <div className="case-chat__messages">
+                          {messages.slice(-5).map((message) => (
+                            <article
+                              key={message.id}
+                              className={`case-chat__message case-chat__message--${message.role}`}
+                            >
+                              <header>
+                                <strong>{message.role === "assistant" ? "LexiFlow" : "You"}</strong>
+                                <span className="muted">{message.createdAt ?? ""}</span>
+                              </header>
+                              <p>{message.content}</p>
+                            </article>
+                          ))}
+                        </div>
+                        <form className="case-chat__composer" onSubmit={handleChatSubmit}>
+                          <input
+                            className="input"
+                            type="text"
+                            value={chatInput}
+                            onChange={(event) => setChatInput(event.target.value)}
+                            placeholder="Ask for next steps or request a summary..."
+                            disabled={processing}
+                          />
+                          <button className="btn btn-primary" type="submit" disabled={processing || !chatInput.trim()}>
+                            {processing ? "Sending..." : "Send"}
+                          </button>
+                        </form>
+                      </div>
+                    </section>
+                    <section className="case-support-card">
+                      <header>
+                        <h5>Recommended paperwork</h5>
+                        <p className="muted">Latest drafts tailored to this workspace.</p>
+                      </header>
+                      {recentPaperwork ? (
+                        <Fragment>
+                          <div className="paperwork-preview">
+                            <strong>{recentPaperwork.title}</strong>
+                            <p className="muted">
+                              {recentPaperwork.description ?? "Preview generated by the assistant."}
+                            </p>
+                          </div>
+                          <ul className="paperwork-checklist">
+                            {(recentPaperwork.checklist ?? []).slice(0, 3).map((item, index) => (
+                              <li key={index}>{item}</li>
+                            ))}
+                          </ul>
+                          <p className="muted">
+                            Generated{" "}
+                            {recentPaperwork.generatedAt
+                              ? new Date(recentPaperwork.generatedAt).toLocaleString()
+                              : "recently"}
+                          </p>
+                        </Fragment>
+                      ) : (
+                        <p className="muted" style={{ margin: 0 }}>
+                          No paperwork yet. Upload documents or chat with the assistant to draft templates.
+                        </p>
+                      )}
+                    </section>
+                  </div>
                 </div>
               ) : (
                 <p className="muted" style={{ margin: 0 }}>
@@ -195,10 +364,11 @@ const AssistantWorkspaceContent = ({ user }) => {
           </div>
         ) : (
           <p className="muted" style={{ margin: 0 }}>
-            No cases yet. Submit the form above to create your first matter.
+            No cases yet. Click &ldquo;Create new case&rdquo; above when you are ready to start your first matter.
           </p>
         )}
       </section>
+      <CaseCreatedModal caseData={newlyCreatedCase} onClose={closeCaseCreatedModal} />
     </div>
   );
 };

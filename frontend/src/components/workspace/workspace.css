@@ -850,6 +850,186 @@
   gap: 1.2rem;
 }
 
+.case-manager__support {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.2rem;
+}
+
+.case-support-card {
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.upload-dropzone {
+  border: 1px dashed rgba(53, 71, 255, 0.4);
+  border-radius: 14px;
+  padding: 1.2rem;
+  text-align: center;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.upload-dropzone:hover {
+  border-color: rgba(53, 71, 255, 0.6);
+  background: rgba(53, 71, 255, 0.08);
+}
+
+.upload-dropzone input {
+  display: none;
+}
+
+.case-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.case-chat__messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.case-chat__message {
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.case-chat__message header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.case-chat__message--assistant {
+  background: rgba(53, 71, 255, 0.08);
+  border: 1px solid rgba(53, 71, 255, 0.2);
+}
+
+.case-chat__message--user {
+  background: rgba(17, 24, 39, 0.06);
+  border: 1px solid rgba(17, 24, 39, 0.12);
+}
+
+.case-chat__message p {
+  margin: 0;
+}
+
+.case-chat__composer {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.case-chat__composer .input {
+  flex: 1;
+}
+
+.paperwork-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.paperwork-preview strong {
+  font-size: 1rem;
+}
+
+.paperwork-checklist {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.paperwork-checklist li {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 32, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+  z-index: 40;
+}
+
+.modal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.6rem 1.8rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 36px 68px rgba(13, 22, 58, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.modal-card__header h3 {
+  margin: 0;
+}
+
+.modal-card__summary {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.8rem;
+}
+
+.modal-card__summary div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.modal-card__summary dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.modal-card__summary dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.modal-card__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .case-manager__section {
   display: flex;
   flex-direction: column;
@@ -901,6 +1081,10 @@
   .case-manager__workspace {
     padding: 1rem 1.1rem;
   }
+
+  .case-manager__support {
+    grid-template-columns: 1fr;
+  }
 }
 
 .empty-state {
@@ -924,5 +1108,13 @@
 
   .timeline__date {
     order: -1;
+  }
+
+  .case-chat__composer {
+    flex-direction: column;
+  }
+
+  .case-chat__composer .btn {
+    width: 100%;
   }
 }

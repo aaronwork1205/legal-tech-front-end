@@ -5,9 +5,9 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"lexiflow/backend/internal/config"
 	"lexiflow/backend/internal/http/handlers"
-	"gorm.io/gorm"
 )
 
 func NewServer(cfg config.Config, db *gorm.DB) *gin.Engine {
@@ -26,6 +26,8 @@ func NewServer(cfg config.Config, db *gorm.DB) *gin.Engine {
 	api := r.Group("/api/v1")
 	authHandler := handlers.NewAuthHandler(db)
 	authHandler.RegisterRoutes(api)
+	caseHandler := handlers.NewCaseHandler(db, authHandler)
+	caseHandler.RegisterRoutes(api)
 
 	return r
 }

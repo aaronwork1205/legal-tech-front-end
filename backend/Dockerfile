@@ -12,4 +12,4 @@ WORKDIR /app
 COPY --from=builder /src/server ./server
 EXPOSE 8080
 USER nonroot:nonroot
-ENTRYPOINT ["/app/server"]
+ENTRYPOINT ["/app/server"] 

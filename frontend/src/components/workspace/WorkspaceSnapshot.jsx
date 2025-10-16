@@ -6,11 +6,16 @@ const formatCurrency = (value, currency) =>
     currency
   }).format(value);
 
-export const WorkspaceSnapshot = ({ user, currentPlan, usage, onPlanChange, planStatus }) => {
+export const WorkspaceSnapshot = ({ user, currentPlan, onPlanChange, planStatus, metrics }) => {
   const plan = currentPlan ?? subscriptionTiers[0];
-  const allowance = plan.quota?.aiSessions;
-  const allowanceLabel =
-    typeof allowance === "number" ? `${usage.messages}/${allowance} conversations` : `${usage.messages} · ${allowance}`;
+  const {
+    totalCases = 0,
+    activeCases = 0,
+    counselEngaged = 0,
+    pendingDocuments = 0,
+    aiMessages = 0
+  } = metrics ?? {};
+  const aiSessionsLabel = `${aiMessages} messages logged`;
 
   const handleSelect = (event) => {
     const planId = event.target.value;
@@ -20,34 +25,32 @@ export const WorkspaceSnapshot = ({ user, currentPlan, usage, onPlanChange, plan
   };
 
   return (
-    <section className="workspace-card workspace-card--wide">
+    <section className="workspace-card workspace-card--full">
       <header>
         <h3>Workspace snapshot</h3>
-        <p className="muted">Monitor subscription, usage, and paperwork at a glance.</p>
+        <p className="muted">Stay aligned on counsel coverage, paperwork progress, and subscription details.</p>
       </header>
 
       <div className="workspace-metrics">
         <div className="workspace-metric">
-          <span>Current plan</span>
-          <strong>{plan.name}</strong>
-          <small className="muted">
-            {formatCurrency(plan.price, plan.currency)} / {plan.cadence}
-          </small>
+          <span>Active cases</span>
+          <strong>{activeCases}</strong>
+          <small className="muted">{totalCases} total matters</small>
         </div>
         <div className="workspace-metric">
-          <span>AI sessions</span>
-          <strong>{allowanceLabel}</strong>
-          <small className="muted">Messages logged with LexiFlow</small>
+          <span>Assigned counsel</span>
+          <strong>{counselEngaged}</strong>
+          <small className="muted">Specialists currently engaged</small>
         </div>
         <div className="workspace-metric">
-          <span>Documents analysed</span>
-          <strong>{usage.documents}</strong>
-          <small className="muted">Files scanned for automation</small>
+          <span>Awaiting documents</span>
+          <strong>{pendingDocuments}</strong>
+          <small className="muted">Items pending attorney review</small>
         </div>
         <div className="workspace-metric">
-          <span>Paperwork drafts</span>
-          <strong>{usage.paperwork}</strong>
-          <small className="muted">Generated from conversations + uploads</small>
+          <span>AI usage</span>
+          <strong>{aiSessionsLabel}</strong>
+          <small className="muted">Assistant touchpoints across cases</small>
         </div>
       </div>
 
@@ -57,7 +60,7 @@ export const WorkspaceSnapshot = ({ user, currentPlan, usage, onPlanChange, plan
           <select className="select" value={user?.subscription ?? plan.id} onChange={handleSelect}>
             {subscriptionTiers.map((tier) => (
               <option key={tier.id} value={tier.id}>
-                {tier.name} · {formatCurrency(tier.price, tier.currency)}/{tier.cadence}
+                {tier.name} | {formatCurrency(tier.price, tier.currency)}/{tier.cadence}
               </option>
             ))}
           </select>

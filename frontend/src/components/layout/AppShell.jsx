@@ -2,9 +2,13 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../state/authContext.jsx";
 import "./layout.css";
 
-const navItems = [
+const AUTH_NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard" },
-  { to: "/assistant", label: "AI Workspace" },
+  { to: "/assistant", label: "AI Workspace" }
+];
+
+const MARKETING_NAV_ITEMS = [
+  { to: "/", label: "Product" },
   { to: "/demo", label: "Demo Lab" }
 ];
 
@@ -26,7 +30,7 @@ export const AppShell = ({ children }) => {
           </Link>
         </div>
         <nav>
-          {navItems.map((item) => (
+          {(isAuthenticated ? AUTH_NAV_ITEMS : MARKETING_NAV_ITEMS).map((item) => (
             <NavLink key={item.to} to={item.to} className="nav-link">
               {item.label}
             </NavLink>

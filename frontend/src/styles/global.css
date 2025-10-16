@@ -53,7 +53,7 @@ ol {
 }
 
 .container {
-  width: min(1120px, 92vw);
+  width: min(1380px, 94vw);
   margin: 0 auto;
 }
 
@@ -83,6 +83,19 @@ ol {
   background: var(--surface-alt);
   color: var(--primary);
   border: 1px solid rgba(53, 71, 255, 0.25);
+}
+
+.link {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: underline;
 }
 
 .badge {
@@ -124,6 +137,10 @@ ol {
   background: var(--surface-alt);
   color: var(--primary);
   font-size: 0.8rem;
+}
+
+.success-text {
+  color: #047857;
 }
 
 .input,

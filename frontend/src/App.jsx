@@ -9,15 +9,51 @@ import DemoShowcase from "./pages/DemoShowcase.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
 import { AuthProvider } from "./state/authContext.jsx";
 import { ProtectedRoute } from "./components/routing/ProtectedRoute.jsx";
+import { PublicRoute } from "./components/routing/PublicRoute.jsx";
 
 const App = () => (
   <AuthProvider>
     <Routes>
-      <Route index element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<RegisterPage />} />
-      <Route path="/verify-email" element={<VerifyEmailPage />} />
-      <Route path="/demo" element={<DemoShowcase />} />
+      <Route
+        index
+        element={
+          <PublicRoute>
+            <LandingPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          <PublicRoute>
+            <RegisterPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/verify-email"
+        element={
+          <PublicRoute>
+            <VerifyEmailPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/demo"
+        element={
+          <PublicRoute>
+            <DemoShowcase />
+          </PublicRoute>
+        }
+      />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />

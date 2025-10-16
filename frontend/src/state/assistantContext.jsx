@@ -31,7 +31,9 @@ const initialState = {
     messages: 0,
     documents: 0,
     paperwork: 0
-  }
+  },
+  cases: [],
+  activeCaseId: null
 };
 
 const assistantReducer = (state, action) => {
@@ -110,6 +112,17 @@ const assistantReducer = (state, action) => {
       return { ...state, uploading: false, error: action.payload };
     case "ERROR":
       return { ...state, processing: false, uploading: false, error: action.payload };
+    case "CREATE_CASE":
+      return {
+        ...state,
+        cases: [action.payload, ...state.cases],
+        activeCaseId: action.payload.id
+      };
+    case "SET_ACTIVE_CASE":
+      return {
+        ...state,
+        activeCaseId: action.payload
+      };
     default:
       return state;
   }
@@ -204,6 +217,27 @@ export const AssistantProvider = ({ children }) => {
     }
   }, []);
 
+  const createCase = useCallback((caseData) => {
+    const now = new Date();
+    const enrichedCase = {
+      id: uuid(),
+      createdAt: now.toISOString(),
+      status: "Active",
+      ...caseData
+    };
+    dispatch({ type: "CREATE_CASE", payload: enrichedCase });
+    return enrichedCase;
+  }, []);
+
+  const setActiveCase = useCallback((caseId) => {
+    dispatch({ type: "SET_ACTIVE_CASE", payload: caseId });
+  }, []);
+
+  const activeCase = useMemo(
+    () => state.cases.find((item) => item.id === state.activeCaseId) ?? null,
+    [state.cases, state.activeCaseId]
+  );
+
   const value = useMemo(
     () => ({
       messages: state.messages,
@@ -217,7 +251,11 @@ export const AssistantProvider = ({ children }) => {
       usage: state.usage,
       error: state.error,
       sendMessage,
-      uploadDocument
+      uploadDocument,
+      cases: state.cases,
+      createCase,
+      activeCase,
+      setActiveCase
     }),
     [
       state.messages,
@@ -231,7 +269,11 @@ export const AssistantProvider = ({ children }) => {
       state.usage,
       state.error,
       sendMessage,
-      uploadDocument
+      uploadDocument,
+      state.cases,
+      createCase,
+      activeCase,
+      setActiveCase
     ]
   );
 

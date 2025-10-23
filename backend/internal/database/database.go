@@ -11,6 +11,8 @@ import (
 func Connect(dsn string) *gorm.DB {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
+
+		
 		log.Fatalf("failed to connect database: %v", err)
 	}
 
@@ -20,6 +22,8 @@ func Connect(dsn string) *gorm.DB {
 		&models.VerificationToken{},
 		&models.Case{},
 		&models.CaseDocument{},
+		&models.Conversation{},
+		&models.ChatMessage{},
 	); err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}

@@ -4,7 +4,8 @@ import "./layout.css";
 
 const AUTH_NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard" },
-  { to: "/assistant", label: "AI Workspace" }
+  { to: "/assistant", label: "AI Workspace" },
+  { to: "/ai-chat", label: "AI Assistant" }
 ];
 
 const MARKETING_NAV_ITEMS = [

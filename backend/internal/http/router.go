@@ -28,6 +28,8 @@ func NewServer(cfg config.Config, db *gorm.DB) *gin.Engine {
 	authHandler.RegisterRoutes(api)
 	caseHandler := handlers.NewCaseHandler(db, authHandler)
 	caseHandler.RegisterRoutes(api)
+	chatHandler := handlers.NewChatHandler(db, authHandler)
+	chatHandler.RegisterRoutes(api)
 
 	return r
 }

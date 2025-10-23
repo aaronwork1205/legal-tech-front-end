@@ -122,6 +122,7 @@ export const CaseCreationForm = ({ onSubmit, onCancel = () => {}, showCancel = t
         personalDocuments: sanitiseList(personalDocuments, "name"),
         timeline: sanitiseList(timeline, "title").map((item) => ({
           ...item,
+          date: item.date || "",
           displayDate: item.date ? new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""
         })),
         tasks: sanitiseList(tasks, "title")
@@ -439,9 +440,11 @@ export const CaseCreationForm = ({ onSubmit, onCancel = () => {}, showCancel = t
               <div key={event.id} className="case-form__card">
                 <header>
                   <strong>Timeline entry</strong>
-                  <button type="button" className="link" onClick={() => handleArrayRemove(setTimeline)(event.id)}>
-                    Remove
-                  </button>
+                  {timeline.length > 1 ? (
+                    <button type="button" className="link" onClick={() => handleArrayRemove(setTimeline)(event.id)}>
+                      Remove
+                    </button>
+                  ) : null}
                 </header>
                 <div className="case-form__two-column">
                   <label className="form-label">
@@ -511,9 +514,11 @@ export const CaseCreationForm = ({ onSubmit, onCancel = () => {}, showCancel = t
               <div key={task.id} className="case-form__card">
                 <header>
                   <strong>Task</strong>
-                  <button type="button" className="link" onClick={() => handleArrayRemove(setTasks)(task.id)}>
-                    Remove
-                  </button>
+                  {tasks.length > 1 ? (
+                    <button type="button" className="link" onClick={() => handleArrayRemove(setTasks)(task.id)}>
+                      Remove
+                    </button>
+                  ) : null}
                 </header>
                 <label className="form-label">
                   Title

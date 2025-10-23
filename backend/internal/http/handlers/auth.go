@@ -32,6 +32,7 @@ type registerRequest struct {
 	Email       string `json:"email" binding:"required,email"`
 	Password    string `json:"password" binding:"required,min=8"`
 	Plan        string `json:"plan"`
+	Role        string `json:"role"`
 }
 
 type loginRequest struct {
@@ -59,6 +60,7 @@ type userResponse struct {
 	Verified     bool      `json:"verified"`
 	Subscription string    `json:"subscription"`
 	CreatedAt    string    `json:"createdAt"`
+	Role         string    `json:"role"`
 }
 
 type authSuccessResponse struct {
@@ -114,11 +116,21 @@ func (h *AuthHandler) handleRegister(ctx *gin.Context) {
 		subscription = "starter"
 	}
 
+	role := strings.TrimSpace(strings.ToLower(req.Role))
+	if role == "" {
+		role = models.UserRoleClient
+	}
+	if role != models.UserRoleClient && role != models.UserRoleLawyer {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported role"})
+		return
+	}
+
 	user := models.User{
 		CompanyName:  req.CompanyName,
 		Email:        email,
 		PasswordHash: string(hash),
 		Subscription: subscription,
+		Role:         role,
 	}
 
 	if err := h.db.Create(&user).Error; err != nil {
@@ -328,6 +340,7 @@ func toUserResponse(user *models.User) userResponse {
 		Verified:     user.Verified,
 		Subscription: user.Subscription,
 		CreatedAt:    user.CreatedAt.UTC().Format(time.RFC3339),
+		Role:         user.Role,
 	}
 }
 

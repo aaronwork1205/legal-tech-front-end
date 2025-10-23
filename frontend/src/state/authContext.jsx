@@ -44,10 +44,18 @@ export const AuthProvider = ({ children }) => {
     setInitialised(true);
   }, []);
 
-  const handleLogin = useCallback(async (credentials) => {
+  const handleLogin = useCallback(async (credentials, expectedRole) => {
     dispatch({ type: "LOGIN_REQUEST" });
     try {
       const user = await login(credentials);
+      if (expectedRole && user.role !== expectedRole) {
+        clearSession();
+        throw new Error(
+          expectedRole === "lawyer"
+            ? "This account is not registered as a lawyer workspace."
+            : "This account is not registered as a client workspace."
+        );
+      }
       dispatch({ type: "LOGIN_SUCCESS", payload: user });
       return user;
     } catch (error) {

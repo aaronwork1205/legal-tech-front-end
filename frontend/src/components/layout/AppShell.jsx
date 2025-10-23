@@ -7,6 +7,8 @@ const AUTH_NAV_ITEMS = [
   { to: "/assistant", label: "AI Workspace" }
 ];
 
+const LAWYER_NAV_ITEMS = [{ to: "/lawyer/cases", label: "Case desk" }];
+
 const MARKETING_NAV_ITEMS = [
   { to: "/", label: "Product" },
   { to: "/demo", label: "Demo Lab" }
@@ -15,6 +17,12 @@ const MARKETING_NAV_ITEMS = [
 export const AppShell = ({ children }) => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  const navItems = isAuthenticated
+    ? user?.role === "lawyer"
+      ? LAWYER_NAV_ITEMS
+      : AUTH_NAV_ITEMS
+    : MARKETING_NAV_ITEMS;
 
   const handleLogout = () => {
     logout();
@@ -25,12 +33,12 @@ export const AppShell = ({ children }) => {
     <div className="app-shell">
       <header className="site-header">
         <div className="logo">
-          <Link to={isAuthenticated ? "/dashboard" : "/"}>
+          <Link to={isAuthenticated ? (user?.role === "lawyer" ? "/lawyer/cases" : "/dashboard") : "/"}>
             <span className="logo-text">LexiFlow</span>
           </Link>
         </div>
         <nav>
-          {(isAuthenticated ? AUTH_NAV_ITEMS : MARKETING_NAV_ITEMS).map((item) => (
+          {navItems.map((item) => (
             <NavLink key={item.to} to={item.to} className="nav-link">
               {item.label}
             </NavLink>
@@ -40,10 +48,15 @@ export const AppShell = ({ children }) => {
           {user ? (
             <>
               <div className="user-badge">
-                <span className="pill">{user.subscription?.toUpperCase() ?? "FREE"}</span>
+                <span className="pill">
+                  {user.role === "lawyer" ? "LAWYER" : user.subscription?.toUpperCase() ?? "FREE"}
+                </span>
                 <div>
                   <p>{user.companyName}</p>
-                  <small>{user.email}</small>
+                  <small>
+                    {user.email}
+                    {user.role === "lawyer" ? " · Lawyer workspace" : ""}
+                  </small>
                 </div>
               </div>
               <button className="btn btn-secondary" onClick={handleLogout}>

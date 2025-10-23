@@ -61,6 +61,47 @@
   gap: 1rem;
 }
 
+.account-switcher {
+  background: rgba(53, 71, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.4rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.account-switcher__option {
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  gap: 0.25rem;
+  color: var(--muted);
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.account-switcher__option:hover {
+  background: rgba(53, 71, 255, 0.12);
+}
+
+.account-switcher__option--active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 12px 24px rgba(53, 71, 255, 0.15);
+}
+
+.account-switcher__label {
+  font-weight: 600;
+}
+
+.account-switcher__helper {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .auth-row {
   display: flex;
   justify-content: space-between;

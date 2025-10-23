@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import AssistantWorkspace from "./pages/AssistantWorkspace.jsx";
 import DemoShowcase from "./pages/DemoShowcase.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
+import LawyerCasesPage from "./pages/LawyerCasesPage.jsx";
 import { AuthProvider } from "./state/authContext.jsx";
 import { ProtectedRoute } from "./components/routing/ProtectedRoute.jsx";
 import { PublicRoute } from "./components/routing/PublicRoute.jsx";
@@ -58,6 +59,7 @@ const App = () => (
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/assistant" element={<AssistantWorkspace />} />
+        <Route path="/lawyer/cases" element={<LawyerCasesPage />} />
       </Route>
 
       <Route path="/app" element={<Navigate to="/dashboard" replace />} />

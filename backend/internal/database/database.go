@@ -19,6 +19,7 @@ func Connect(dsn string) *gorm.DB {
 		&models.Session{},
 		&models.VerificationToken{},
 		&models.Case{},
+		&models.CaseAssignment{},
 		&models.CaseDocument{},
 	); err != nil {
 		log.Fatalf("failed to migrate database: %v", err)

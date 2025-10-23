@@ -54,20 +54,27 @@ type attachDocumentRequest struct {
 	StoragePath string `json:"storagePath"`
 }
 
+type assignLawyerRequest struct {
+	LawyerID string `json:"lawyerId" binding:"required"`
+	Notes    string `json:"notes"`
+}
+
 type caseResponse struct {
-	ID         uuid.UUID              `json:"id"`
-	Name       string                 `json:"name"`
-	Priority   string                 `json:"priority"`
-	Status     string                 `json:"status"`
-	MatterType string                 `json:"matterType"`
-	Owner      string                 `json:"owner"`
-	Summary    string                 `json:"summary"`
-	AIFocus    string                 `json:"aiFocus"`
-	AIContext  map[string]any         `json:"aiContext,omitempty"`
-	Metadata   map[string]any         `json:"metadata,omitempty"`
-	Documents  []caseDocumentResponse `json:"documents"`
-	CreatedAt  time.Time              `json:"createdAt"`
-	UpdatedAt  time.Time              `json:"updatedAt"`
+	ID              uuid.UUID              `json:"id"`
+	Name            string                 `json:"name"`
+	Priority        string                 `json:"priority"`
+	Status          string                 `json:"status"`
+	MatterType      string                 `json:"matterType"`
+	Owner           string                 `json:"owner"`
+	Summary         string                 `json:"summary"`
+	AIFocus         string                 `json:"aiFocus"`
+	AIContext       map[string]any         `json:"aiContext,omitempty"`
+	Metadata        map[string]any         `json:"metadata,omitempty"`
+	Documents       []caseDocumentResponse `json:"documents"`
+	AssignedLawyers []caseLawyerResponse   `json:"assignedLawyers"`
+	Client          *caseClientResponse    `json:"client,omitempty"`
+	CreatedAt       time.Time              `json:"createdAt"`
+	UpdatedAt       time.Time              `json:"updatedAt"`
 }
 
 type caseDocumentResponse struct {
@@ -83,6 +90,20 @@ type caseDocumentResponse struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+type caseClientResponse struct {
+	ID          uuid.UUID `json:"id"`
+	CompanyName string    `json:"companyName"`
+	Email       string    `json:"email"`
+}
+
+type caseLawyerResponse struct {
+	ID          uuid.UUID `json:"id"`
+	CompanyName string    `json:"companyName"`
+	Email       string    `json:"email"`
+	AssignedAt  time.Time `json:"assignedAt"`
+	Notes       string    `json:"notes,omitempty"`
+}
+
 func NewCaseHandler(db *gorm.DB, auth *AuthHandler) *CaseHandler {
 	return &CaseHandler{db: db, auth: auth}
 }
@@ -94,6 +115,7 @@ func (h *CaseHandler) RegisterRoutes(router *gin.RouterGroup) {
 		cases.POST("", h.handleCreateCase)
 		cases.GET("/:id", h.handleGetCase)
 		cases.DELETE("/:id", h.handleDeleteCase)
+		cases.POST("/:id/assign", h.handleAssignLawyer)
 		cases.POST("/:id/documents", h.handleAttachDocument)
 		cases.DELETE("/:id/documents/:documentId", h.handleDeleteDocument)
 	}
@@ -102,6 +124,10 @@ func (h *CaseHandler) RegisterRoutes(router *gin.RouterGroup) {
 func (h *CaseHandler) handleCreateCase(ctx *gin.Context) {
 	_, user, ok := h.auth.requireSession(ctx)
 	if !ok {
+		return
+	}
+	if user.Role != models.UserRoleClient {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Only client workspaces can create cases"})
 		return
 	}
 
@@ -162,7 +188,7 @@ func (h *CaseHandler) handleCreateCase(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, toCaseResponse(&caseModel))
+	ctx.JSON(http.StatusCreated, toCaseResponse(&caseModel, false))
 }
 
 func (h *CaseHandler) handleListCases(ctx *gin.Context) {
@@ -171,15 +197,29 @@ func (h *CaseHandler) handleListCases(ctx *gin.Context) {
 		return
 	}
 
+	query := h.db.Model(&models.Case{}).
+		Preload("Documents").
+		Preload("Assignments.Lawyer").
+		Preload("User").
+		Order("cases.created_at DESC")
+
+	if user.Role == models.UserRoleLawyer {
+		query = query.Joins("JOIN case_assignments ON case_assignments.case_id = cases.id").
+			Where("case_assignments.lawyer_id = ?", user.ID).
+			Distinct("cases.id")
+	} else {
+		query = query.Where("cases.user_id = ?", user.ID)
+	}
+
 	var cases []models.Case
-	if err := h.db.Preload("Documents").Where("user_id = ?", user.ID).Order("created_at DESC").Find(&cases).Error; err != nil {
+	if err := query.Find(&cases).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to fetch cases"})
 		return
 	}
 
 	payload := make([]caseResponse, 0, len(cases))
 	for i := range cases {
-		payload = append(payload, toCaseResponse(&cases[i]))
+		payload = append(payload, toCaseResponse(&cases[i], user.Role == models.UserRoleLawyer))
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"cases": payload})
@@ -197,8 +237,21 @@ func (h *CaseHandler) handleGetCase(ctx *gin.Context) {
 		return
 	}
 
+	query := h.db.Model(&models.Case{}).
+		Preload("Documents").
+		Preload("Assignments.Lawyer").
+		Preload("User").
+		Where("cases.id = ?", caseID)
+
+	if user.Role == models.UserRoleLawyer {
+		query = query.Joins("JOIN case_assignments ON case_assignments.case_id = cases.id").
+			Where("case_assignments.lawyer_id = ?", user.ID)
+	} else {
+		query = query.Where("cases.user_id = ?", user.ID)
+	}
+
 	var caseModel models.Case
-	if err := h.db.Preload("Documents").Where("id = ? AND user_id = ?", caseID, user.ID).First(&caseModel).Error; err != nil {
+	if err := query.First(&caseModel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "Case not found"})
 			return
@@ -207,12 +260,16 @@ func (h *CaseHandler) handleGetCase(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"case": toCaseResponse(&caseModel)})
+	ctx.JSON(http.StatusOK, gin.H{"case": toCaseResponse(&caseModel, user.Role == models.UserRoleLawyer)})
 }
 
 func (h *CaseHandler) handleDeleteCase(ctx *gin.Context) {
 	_, user, ok := h.auth.requireSession(ctx)
 	if !ok {
+		return
+	}
+	if user.Role != models.UserRoleClient {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Only client workspaces can delete cases"})
 		return
 	}
 
@@ -230,9 +287,107 @@ func (h *CaseHandler) handleDeleteCase(ctx *gin.Context) {
 	ctx.Status(http.StatusNoContent)
 }
 
+func (h *CaseHandler) handleAssignLawyer(ctx *gin.Context) {
+	_, user, ok := h.auth.requireSession(ctx)
+	if !ok {
+		return
+	}
+	if user.Role != models.UserRoleClient {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Only client workspaces can assign lawyers"})
+		return
+	}
+
+	caseID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid case id"})
+		return
+	}
+
+	if err := h.ensureCaseBelongsToUser(caseID, user.ID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Case not found"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to validate case"})
+		return
+	}
+
+	var req assignLawyerRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid assignment payload"})
+		return
+	}
+
+	lawyerID, err := uuid.Parse(strings.TrimSpace(req.LawyerID))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lawyer id"})
+		return
+	}
+
+	var lawyer models.User
+	if err := h.db.Where("id = ? AND role = ?", lawyerID, models.UserRoleLawyer).First(&lawyer).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Lawyer not found"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to fetch lawyer"})
+		return
+	}
+
+	notes := strings.TrimSpace(req.Notes)
+	var assignment models.CaseAssignment
+	err = h.db.Where("case_id = ? AND lawyer_id = ?", caseID, lawyerID).First(&assignment).Error
+
+	created := false
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			created = true
+			assignment = models.CaseAssignment{
+				CaseID:   caseID,
+				LawyerID: lawyerID,
+				Notes:    notes,
+			}
+			if err := h.db.Create(&assignment).Error; err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to assign lawyer"})
+				return
+			}
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to assign lawyer"})
+			return
+		}
+	} else if notes != assignment.Notes {
+		assignment.Notes = notes
+		if err := h.db.Save(&assignment).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to update assignment"})
+			return
+		}
+	}
+
+	assignment.Lawyer = lawyer
+
+	resp := caseLawyerResponse{
+		ID:          lawyer.ID,
+		CompanyName: lawyer.CompanyName,
+		Email:       lawyer.Email,
+		AssignedAt:  assignment.CreatedAt,
+		Notes:       assignment.Notes,
+	}
+
+	status := http.StatusCreated
+	if !created {
+		status = http.StatusOK
+	}
+
+	ctx.JSON(status, gin.H{"assignment": resp})
+}
+
 func (h *CaseHandler) handleAttachDocument(ctx *gin.Context) {
 	_, user, ok := h.auth.requireSession(ctx)
 	if !ok {
+		return
+	}
+	if user.Role != models.UserRoleClient {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Only client workspaces can attach documents"})
 		return
 	}
 
@@ -282,6 +437,10 @@ func (h *CaseHandler) handleAttachDocument(ctx *gin.Context) {
 func (h *CaseHandler) handleDeleteDocument(ctx *gin.Context) {
 	_, user, ok := h.auth.requireSession(ctx)
 	if !ok {
+		return
+	}
+	if user.Role != models.UserRoleClient {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Only client workspaces can delete documents"})
 		return
 	}
 
@@ -340,7 +499,7 @@ func toCaseDocumentModel(payload caseDocumentPayload, defaultCategory string) mo
 	}
 }
 
-func toCaseResponse(model *models.Case) caseResponse {
+func toCaseResponse(model *models.Case, includeClient bool) caseResponse {
 	resp := caseResponse{
 		ID:         model.ID,
 		Name:       model.Name,
@@ -382,6 +541,33 @@ func toCaseResponse(model *models.Case) caseResponse {
 		resp.Documents = docs
 	} else {
 		resp.Documents = []caseDocumentResponse{}
+	}
+
+	assignments := make([]caseLawyerResponse, 0, len(model.Assignments))
+	for i := range model.Assignments {
+		assignment := model.Assignments[i]
+		if assignment.Lawyer.ID == uuid.Nil {
+			continue
+		}
+		assignments = append(assignments, caseLawyerResponse{
+			ID:          assignment.Lawyer.ID,
+			CompanyName: assignment.Lawyer.CompanyName,
+			Email:       assignment.Lawyer.Email,
+			AssignedAt:  assignment.CreatedAt,
+			Notes:       assignment.Notes,
+		})
+	}
+	if assignments == nil {
+		assignments = []caseLawyerResponse{}
+	}
+	resp.AssignedLawyers = assignments
+
+	if includeClient && model.User.ID != uuid.Nil {
+		resp.Client = &caseClientResponse{
+			ID:          model.User.ID,
+			CompanyName: model.User.CompanyName,
+			Email:       model.User.Email,
+		}
 	}
 
 	return resp

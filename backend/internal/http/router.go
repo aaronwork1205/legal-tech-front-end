@@ -26,7 +26,7 @@ func NewServer(cfg config.Config, db *gorm.DB) *gin.Engine {
 	api := r.Group("/api/v1")
 	authHandler := handlers.NewAuthHandler(db)
 	authHandler.RegisterRoutes(api)
-	caseHandler := handlers.NewCaseHandler(db, authHandler)
+	caseHandler := handlers.NewCaseHandler(db, authHandler, cfg.UploadDir)
 	caseHandler.RegisterRoutes(api)
 
 	return r

@@ -3,6 +3,19 @@ const SESSION_KEY = "lexiflow:session";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
 
 const request = async (path, options = {}) => {
+<<<<<<< Updated upstream
+=======
+  const session = readSession();
+  const isFormData = options.body instanceof FormData;
+  const headers = { ...(options.headers ?? {}) };
+  if (!isFormData && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
+  if (session?.sessionToken) {
+    headers.Authorization = `Bearer ${session.sessionToken}`;
+  }
+
+>>>>>>> Stashed changes
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",

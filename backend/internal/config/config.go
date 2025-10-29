@@ -10,12 +10,14 @@ type Config struct {
 	Port        string
 	DatabaseURL string
 	CorsOrigins []string
+	UploadDir   string
 }
 
 func Load() Config {
 	port := getEnv("PORT", "8080")
 	databaseURL := getEnv("DATABASE_URL", "postgres://lexiflow:lexiflow@localhost:5432/lexiflow?sslmode=disable")
 	cors := getEnv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")
+	uploadDir := getEnv("UPLOAD_DIR", "./uploads")
 
 	origins := []string{}
 	for _, origin := range strings.Split(cors, ",") {
@@ -33,6 +35,7 @@ func Load() Config {
 		Port:        port,
 		DatabaseURL: databaseURL,
 		CorsOrigins: origins,
+		UploadDir:   uploadDir,
 	}
 }
 

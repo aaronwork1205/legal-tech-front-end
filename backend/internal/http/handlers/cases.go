@@ -2,7 +2,10 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,8 +17,9 @@ import (
 )
 
 type CaseHandler struct {
-	db   *gorm.DB
-	auth *AuthHandler
+	db        *gorm.DB
+	auth      *AuthHandler
+	uploadDir string
 }
 
 type createCaseRequest struct {
@@ -83,8 +87,27 @@ type caseDocumentResponse struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+<<<<<<< Updated upstream
 func NewCaseHandler(db *gorm.DB, auth *AuthHandler) *CaseHandler {
 	return &CaseHandler{db: db, auth: auth}
+=======
+type caseClientResponse struct {
+	ID          uuid.UUID `json:"id"`
+	CompanyName string    `json:"companyName"`
+	Email       string    `json:"email"`
+}
+
+type caseLawyerResponse struct {
+	ID          uuid.UUID `json:"id"`
+	CompanyName string    `json:"companyName"`
+	Email       string    `json:"email"`
+	AssignedAt  time.Time `json:"assignedAt"`
+	Notes       string    `json:"notes,omitempty"`
+}
+
+func NewCaseHandler(db *gorm.DB, auth *AuthHandler, uploadDir string) *CaseHandler {
+	return &CaseHandler{db: db, auth: auth, uploadDir: uploadDir}
+>>>>>>> Stashed changes
 }
 
 func (h *CaseHandler) RegisterRoutes(router *gin.RouterGroup) {
@@ -95,7 +118,9 @@ func (h *CaseHandler) RegisterRoutes(router *gin.RouterGroup) {
 		cases.GET("/:id", h.handleGetCase)
 		cases.DELETE("/:id", h.handleDeleteCase)
 		cases.POST("/:id/documents", h.handleAttachDocument)
+		cases.POST("/:id/documents/upload", h.handleUploadDocument)
 		cases.DELETE("/:id/documents/:documentId", h.handleDeleteDocument)
+		cases.GET("/:id/documents/:documentId/download", h.handleDownloadDocument)
 	}
 }
 
@@ -162,7 +187,11 @@ func (h *CaseHandler) handleCreateCase(ctx *gin.Context) {
 		return
 	}
 
+<<<<<<< Updated upstream
 	ctx.JSON(http.StatusCreated, toCaseResponse(&caseModel))
+=======
+	ctx.JSON(http.StatusCreated, h.toCaseResponse(&caseModel, false))
+>>>>>>> Stashed changes
 }
 
 func (h *CaseHandler) handleListCases(ctx *gin.Context) {
@@ -179,7 +208,11 @@ func (h *CaseHandler) handleListCases(ctx *gin.Context) {
 
 	payload := make([]caseResponse, 0, len(cases))
 	for i := range cases {
+<<<<<<< Updated upstream
 		payload = append(payload, toCaseResponse(&cases[i]))
+=======
+		payload = append(payload, h.toCaseResponse(&cases[i], user.Role == models.UserRoleLawyer))
+>>>>>>> Stashed changes
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"cases": payload})
@@ -207,7 +240,11 @@ func (h *CaseHandler) handleGetCase(ctx *gin.Context) {
 		return
 	}
 
+<<<<<<< Updated upstream
 	ctx.JSON(http.StatusOK, gin.H{"case": toCaseResponse(&caseModel)})
+=======
+	ctx.JSON(http.StatusOK, gin.H{"case": h.toCaseResponse(&caseModel, user.Role == models.UserRoleLawyer)})
+>>>>>>> Stashed changes
 }
 
 func (h *CaseHandler) handleDeleteCase(ctx *gin.Context) {
@@ -265,18 +302,7 @@ func (h *CaseHandler) handleAttachDocument(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, caseDocumentResponse{
-		ID:          document.ID,
-		CaseID:      document.CaseID,
-		Name:        document.Title,
-		Owner:       document.Owner,
-		Description: document.Description,
-		Status:      document.Status,
-		Category:    document.Category,
-		StoragePath: document.StoragePath,
-		CreatedAt:   document.CreatedAt,
-		UpdatedAt:   document.UpdatedAt,
-	})
+	ctx.JSON(http.StatusCreated, gin.H{"document": h.toDocumentResponse(&document)})
 }
 
 func (h *CaseHandler) handleDeleteDocument(ctx *gin.Context) {
@@ -306,12 +332,171 @@ func (h *CaseHandler) handleDeleteDocument(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.db.Where("id = ? AND case_id = ?", documentID, caseID).Delete(&models.CaseDocument{}).Error; err != nil {
+	var document models.CaseDocument
+	if err := h.db.Where("id = ? AND case_id = ?", documentID, caseID).First(&document).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to load document"})
+		return
+	}
+
+	if err := h.db.Delete(&document).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to delete document"})
 		return
 	}
 
+	if document.FilePath != "" {
+		_ = os.Remove(document.FilePath)
+	}
+
 	ctx.Status(http.StatusNoContent)
+}
+
+func (h *CaseHandler) handleUploadDocument(ctx *gin.Context) {
+	_, user, ok := h.auth.requireSession(ctx)
+	if !ok {
+		return
+	}
+	if user.Role != models.UserRoleClient {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Only client workspaces can upload documents"})
+		return
+	}
+
+	caseID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid case id"})
+		return
+	}
+
+	if err := h.ensureCaseBelongsToUser(caseID, user.ID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Case not found"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to validate case"})
+		return
+	}
+
+	fileHeader, err := ctx.FormFile("file")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "File is required"})
+		return
+	}
+	if fileHeader.Size == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "File is empty"})
+		return
+	}
+
+	caseDir := filepath.Join(h.uploadDir, caseID.String())
+	if err := os.MkdirAll(caseDir, 0o775); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to prepare storage"})
+		return
+	}
+
+	safeName := sanitizeFilename(fileHeader.Filename)
+	filename := fmt.Sprintf("%s_%s", time.Now().UTC().Format("20060102T150405"), safeName)
+	destination := filepath.Join(caseDir, filename)
+
+	if err := ctx.SaveUploadedFile(fileHeader, destination); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
+		return
+	}
+
+	category := defaultString(ctx.PostForm("category"), "case")
+	document := models.CaseDocument{
+		CaseID:      caseID,
+		Title:       fileHeader.Filename,
+		Owner:       strings.TrimSpace(ctx.PostForm("owner")),
+		Description: strings.TrimSpace(ctx.PostForm("description")),
+		Status:      strings.TrimSpace(ctx.PostForm("status")),
+		Category:    strings.ToLower(strings.TrimSpace(category)),
+		FilePath:    destination,
+	}
+	if document.Category == "" {
+		document.Category = "case"
+	}
+
+	if err := h.db.Create(&document).Error; err != nil {
+		_ = os.Remove(destination)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to persist document"})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"document": h.toDocumentResponse(&document)})
+}
+
+func (h *CaseHandler) handleDownloadDocument(ctx *gin.Context) {
+	_, user, ok := h.auth.requireSession(ctx)
+	if !ok {
+		return
+	}
+
+	caseID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid case id"})
+		return
+	}
+
+	documentID, err := uuid.Parse(ctx.Param("documentId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid document id"})
+		return
+	}
+
+	var document models.CaseDocument
+	switch user.Role {
+	case models.UserRoleClient:
+		if err := h.ensureCaseBelongsToUser(caseID, user.ID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				ctx.JSON(http.StatusNotFound, gin.H{"error": "Case not found"})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to validate case"})
+			return
+		}
+		if err := h.db.Where("id = ? AND case_id = ?", documentID, caseID).First(&document).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				ctx.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to load document"})
+			return
+		}
+	case models.UserRoleLawyer:
+		if err := h.ensureCaseAssignedToLawyer(caseID, user.ID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				ctx.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to validate case"})
+			return
+		}
+		if err := h.db.Where("id = ? AND case_id = ?", documentID, caseID).First(&document).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				ctx.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to load document"})
+			return
+		}
+	default:
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	if document.FilePath == "" {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Document not available for download"})
+		return
+	}
+
+	if _, err := os.Stat(document.FilePath); err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Document missing from storage"})
+		return
+	}
+
+	ctx.FileAttachment(document.FilePath, sanitizeFilename(document.Title))
 }
 
 func (h *CaseHandler) ensureCaseBelongsToUser(caseID, userID uuid.UUID) error {
@@ -340,7 +525,11 @@ func toCaseDocumentModel(payload caseDocumentPayload, defaultCategory string) mo
 	}
 }
 
+<<<<<<< Updated upstream
 func toCaseResponse(model *models.Case) caseResponse {
+=======
+func (h *CaseHandler) toCaseResponse(model *models.Case, includeClient bool) caseResponse {
+>>>>>>> Stashed changes
 	resp := caseResponse{
 		ID:         model.ID,
 		Name:       model.Name,
@@ -366,18 +555,7 @@ func toCaseResponse(model *models.Case) caseResponse {
 		docs := make([]caseDocumentResponse, 0, len(model.Documents))
 		for i := range model.Documents {
 			doc := model.Documents[i]
-			docs = append(docs, caseDocumentResponse{
-				ID:          doc.ID,
-				CaseID:      doc.CaseID,
-				Name:        doc.Title,
-				Owner:       doc.Owner,
-				Description: doc.Description,
-				Status:      doc.Status,
-				Category:    doc.Category,
-				StoragePath: doc.StoragePath,
-				CreatedAt:   doc.CreatedAt,
-				UpdatedAt:   doc.UpdatedAt,
-			})
+			docs = append(docs, h.toDocumentResponse(&doc))
 		}
 		resp.Documents = docs
 	} else {
@@ -385,6 +563,64 @@ func toCaseResponse(model *models.Case) caseResponse {
 	}
 
 	return resp
+}
+
+func (h *CaseHandler) toDocumentResponse(doc *models.CaseDocument) caseDocumentResponse {
+	downloadPath := doc.StoragePath
+	if doc.FilePath != "" {
+		downloadPath = h.documentDownloadPath(doc.CaseID, doc.ID)
+	}
+
+	return caseDocumentResponse{
+		ID:          doc.ID,
+		CaseID:      doc.CaseID,
+		Name:        doc.Title,
+		Owner:       doc.Owner,
+		Description: doc.Description,
+		Status:      doc.Status,
+		Category:    doc.Category,
+		StoragePath: downloadPath,
+		CreatedAt:   doc.CreatedAt,
+		UpdatedAt:   doc.UpdatedAt,
+	}
+}
+
+func (h *CaseHandler) documentDownloadPath(caseID, documentID uuid.UUID) string {
+	return fmt.Sprintf("/api/v1/cases/%s/documents/%s/download", caseID.String(), documentID.String())
+}
+
+func (h *CaseHandler) ensureCaseAssignedToLawyer(caseID, lawyerID uuid.UUID) error {
+	var count int64
+	if err := h.db.Model(&models.CaseAssignment{}).Where("case_id = ? AND lawyer_id = ?", caseID, lawyerID).Count(&count).Error; err != nil {
+		return err
+	}
+	if count == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+func sanitizeFilename(name string) string {
+	base := filepath.Base(strings.TrimSpace(name))
+	if base == "" || base == "." {
+		return fmt.Sprintf("upload-%d", time.Now().Unix())
+	}
+
+	var builder strings.Builder
+	for _, r := range base {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '.', r == '-', r == '_':
+			builder.WriteRune(r)
+		case r == ' ':
+			builder.WriteRune('_')
+		}
+	}
+
+	if builder.Len() == 0 {
+		return fmt.Sprintf("upload-%d", time.Now().Unix())
+	}
+
+	return builder.String()
 }
 
 func defaultString(value, fallback string) string {

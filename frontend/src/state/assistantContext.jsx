@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useReducer } from "react";
 import { converse, getLawyerPool } from "../services/assistantService.js";
 import { derivePaperwork } from "../services/paperworkService.js";
+import { uploadCaseDocument } from "../services/caseService.js";
 import { v4 as uuid } from "uuid";
 
 const AssistantContext = createContext(null);
@@ -77,7 +78,7 @@ const assistantReducer = (state, action) => {
     case "UPLOAD_START":
       return { ...state, uploading: true, error: null };
     case "UPLOAD_SUCCESS": {
-      const { upload, paperwork } = action.payload;
+      const { upload, paperwork, document, caseId } = action.payload;
       const uploads = [upload, ...state.uploads].slice(0, 5);
       const nextPaperworkLog = paperwork ? [paperwork, ...state.paperworkLog].slice(0, 5) : state.paperworkLog;
       const nextSummary = paperwork
@@ -93,6 +94,16 @@ const assistantReducer = (state, action) => {
               "Assign a reviewer to confirm requirements"
             ]
           };
+      const nextCases = document && caseId
+        ? state.cases.map((caseItem) =>
+            caseItem.id === caseId
+              ? {
+                  ...caseItem,
+                  documents: [...(caseItem.documents ?? []), document]
+                }
+              : caseItem
+          )
+        : state.cases;
       return {
         ...state,
         uploading: false,
@@ -105,7 +116,8 @@ const assistantReducer = (state, action) => {
           ...state.usage,
           documents: state.usage.documents + 1,
           paperwork: paperwork ? state.usage.paperwork + 1 : state.usage.paperwork
-        }
+        },
+        cases: nextCases
       };
     }
     case "UPLOAD_FAILURE":
@@ -181,41 +193,62 @@ export const AssistantProvider = ({ children }) => {
 
   const uploadDocument = useCallback(async (file) => {
     if (!file) return null;
+    if (!state.activeCaseId) {
+      dispatch({ type: "UPLOAD_FAILURE", payload: "Select a case before uploading documents." });
+      return null;
+    }
+
     dispatch({ type: "UPLOAD_START" });
 
     try {
-      const text = await file.text();
-      const insights = extractDocumentInsights(text);
+      let text = "";
+      try {
+        text = await file.text();
+      } catch {
+        text = "";
+      }
+
+      const insights = text ? extractDocumentInsights(text) : { topics: [], jurisdiction: null, emails: [], dates: [] };
+
+      const document = await uploadCaseDocument({
+        caseId: state.activeCaseId,
+        file,
+        category: "case"
+      });
+
+      const preview = text ? text.slice(0, 220) : "";
       const upload = {
-        id: uuid(),
-        name: file.name,
+        id: document?.id ?? uuid(),
+        name: document?.name ?? file.name,
         size: file.size,
         uploadedAt: new Date().toISOString(),
-        preview: text.slice(0, 220),
+        preview,
         insights
       };
 
-      const paperwork = derivePaperwork({
-        input: `${file.name} ${text}`,
-        source: "document-upload",
-        metadata: {
-          fileName: file.name,
-          fileSize: file.size,
-          detectedTopics: insights.topics,
-          detectedJurisdiction: insights.jurisdiction
-        }
-      });
+      const paperwork = text
+        ? derivePaperwork({
+            input: `${file.name} ${text}`,
+            source: "document-upload",
+            metadata: {
+              fileName: file.name,
+              fileSize: file.size,
+              detectedTopics: insights.topics,
+              detectedJurisdiction: insights.jurisdiction
+            }
+          })
+        : null;
 
-      dispatch({ type: "UPLOAD_SUCCESS", payload: { upload, paperwork } });
-      return { upload, paperwork };
+      dispatch({ type: "UPLOAD_SUCCESS", payload: { upload, paperwork, document, caseId: state.activeCaseId } });
+      return { upload, paperwork, document };
     } catch (error) {
       dispatch({
         type: "UPLOAD_FAILURE",
-        payload: "Unable to process the file. Try uploading a text or PDF export under 5 MB."
+        payload: error.message ?? "Unable to upload document."
       });
       return null;
     }
-  }, []);
+  }, [state.activeCaseId]);
 
   const createCase = useCallback((caseData) => {
     const now = new Date();

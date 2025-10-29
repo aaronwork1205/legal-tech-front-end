@@ -42,6 +42,7 @@ type CaseDocument struct {
 	Status      string    `gorm:"size:64"`
 	Category    string    `gorm:"size:64;not null;default:case"`
 	StoragePath string    `gorm:"size:512"`
+	FilePath    string    `gorm:"size:1024"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	Case        Case `gorm:"constraint:OnDelete:CASCADE;"`

@@ -59,7 +59,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: "LOGIN_SUCCESS", payload: user });
       return user;
     } catch (error) {
-      dispatch({ type: "ERROR", payload: error.message });
+      const message = error?.message ?? "Unable to sign in";
+      dispatch({ type: "ERROR", payload: message });
       throw error;
     }
   }, []);

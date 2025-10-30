@@ -43,6 +43,7 @@ type CaseDocument struct {
 	Status      string    `gorm:"size:64"`
 	Category    string    `gorm:"size:64;not null;default:case"`
 	StoragePath string    `gorm:"size:512"`
+	FilePath    string    `gorm:"size:1024"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	Case        Case `gorm:"constraint:OnDelete:CASCADE;"`
@@ -51,6 +52,24 @@ type CaseDocument struct {
 func (d *CaseDocument) BeforeCreate(_ *gorm.DB) error {
 	if d.ID == uuid.Nil {
 		d.ID = uuid.New()
+	}
+	return nil
+}
+
+type CaseAssignment struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
+	CaseID    uuid.UUID `gorm:"type:uuid;not null;index:idx_case_lawyer,priority:1"`
+	LawyerID  uuid.UUID `gorm:"type:uuid;not null;index:idx_case_lawyer,priority:2"`
+	Notes     string    `gorm:"size:512"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Case      Case `gorm:"constraint:OnDelete:CASCADE;"`
+	Lawyer    User `gorm:"constraint:OnDelete:CASCADE;"`
+}
+
+func (a *CaseAssignment) BeforeCreate(_ *gorm.DB) error {
+	if a.ID == uuid.Nil {
+		a.ID = uuid.New()
 	}
 	return nil
 }

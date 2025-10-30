@@ -84,6 +84,8 @@ export const register = async ({ companyName, email, password, plan, role }) => 
   return normalised;
 };
 
+export const apiRequest = request;
+
 export const login = async ({ email, password }) => {
   const { user } = await request("/auth/login", {
     method: "POST",

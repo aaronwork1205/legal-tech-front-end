@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,6 +13,23 @@ export const LoginForm = () => {
   const { login, isLoading, error } = useAuth();
   const [demoLoading, setDemoLoading] = useState(false);
   const [accountType, setAccountType] = useState("client");
+
+  const accountOptions = useMemo(
+    () => [
+      {
+        id: "client",
+        label: "I need legal help",
+        helper: "Access the company workspace to manage matters and documents"
+      },
+      {
+        id: "lawyer",
+        label: "I'm a lawyer",
+        helper: "Review matched cases and client materials"
+      }
+    ],
+    []
+  );
+
   const {
     handleSubmit,
     register,
@@ -26,11 +43,7 @@ export const LoginForm = () => {
   });
 
   const onSubmit = async (values) => {
-    try {
-      await login(values, accountType);
-    } catch {
-      // error state handled via auth context
-    }
+    await login(values, accountType);
   };
 
   const handleDemoLogin = async () => {
@@ -45,27 +58,23 @@ export const LoginForm = () => {
 
   return (
     <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
-      <div className="account-switcher" role="tablist" aria-label="Select workspace type">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={accountType === "client"}
-          className={`account-switcher__option${accountType === "client" ? " account-switcher__option--active" : ""}`}
-          onClick={() => setAccountType("client")}
-        >
-          <span className="account-switcher__label">Legal service user</span>
-          <span className="account-switcher__helper">Manage matters, documents, and AI workspace</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={accountType === "lawyer"}
-          className={`account-switcher__option${accountType === "lawyer" ? " account-switcher__option--active" : ""}`}
-          onClick={() => setAccountType("lawyer")}
-        >
-          <span className="account-switcher__label">Lawyer</span>
-          <span className="account-switcher__helper">Review assigned cases and client files</span>
-        </button>
+      <div className="account-switcher" role="tablist" aria-label="Select account type">
+        {accountOptions.map((option) => {
+          const isActive = accountType === option.id;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              className={`account-switcher__option${isActive ? " account-switcher__option--active" : ""}`}
+              onClick={() => setAccountType(option.id)}
+            >
+              <span className="account-switcher__label">{option.label}</span>
+              <span className="account-switcher__helper">{option.helper}</span>
+            </button>
+          );
+        })}
       </div>
       <label className="form-label">
         Work email
@@ -93,7 +102,7 @@ export const LoginForm = () => {
         disabled={isLoading || demoLoading || accountType === "lawyer"}
       >
         {accountType === "lawyer"
-          ? "Request lawyer demo access"
+          ? "Contact our team to enable the lawyer demo"
           : demoLoading
           ? "Loading demo workspace..."
           : "Use demo workspace"}

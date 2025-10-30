@@ -48,13 +48,13 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: "LOGIN_REQUEST" });
     try {
       const user = await login(credentials);
-      if (expectedRole && user.role && user.role !== expectedRole) {
+      if (expectedRole && user.role !== expectedRole) {
         clearSession();
-        const message = expectedRole === "lawyer"
-          ? "This account is not registered as a lawyer workspace."
-          : "This account is not registered as a legal service workspace.";
-        dispatch({ type: "ERROR", payload: message });
-        throw new Error(message);
+        throw new Error(
+          expectedRole === "lawyer"
+            ? "This account is not registered as a lawyer workspace."
+            : "This account is not registered as a client workspace."
+        );
       }
       dispatch({ type: "LOGIN_SUCCESS", payload: user });
       return user;

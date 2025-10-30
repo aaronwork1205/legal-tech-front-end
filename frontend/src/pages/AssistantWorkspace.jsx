@@ -22,6 +22,36 @@ const CaseSection = ({ title, items = [], renderItem, emptyText }) => (
   </div>
 );
 
+const DocumentUploadModal = ({ open, onClose, onUpload, uploading, error }) => {
+  if (!open) return null;
+
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="upload-modal-title">
+      <div className="modal-card modal-card--upload">
+        <header className="modal-card__header">
+          <h3 id="upload-modal-title">Attach documents</h3>
+          <button type="button" className="link" onClick={onClose}>
+            Close
+          </button>
+        </header>
+        <p className="muted upload-modal__hint">
+          Select a file to share with LexiFlow. The assistant will reference it in the conversation thread.
+        </p>
+        <label className="upload-dropzone upload-dropzone--modal">
+          <input type="file" onChange={onUpload} disabled={uploading} />
+          <span>{uploading ? "Uploading..." : "Browse files"}</span>
+        </label>
+        {error ? <p className="error-text">{error}</p> : null}
+        <footer className="modal-card__footer">
+          <button type="button" className="btn btn-secondary" onClick={onClose} disabled={uploading}>
+            Cancel
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
 const CaseCreatedModal = ({ caseData, onClose }) => {
   if (!caseData) return null;
 
@@ -82,6 +112,7 @@ const AssistantWorkspaceContent = ({ user }) => {
   const [isCreatingCase, setIsCreatingCase] = useState(false);
   const [newlyCreatedCase, setNewlyCreatedCase] = useState(null);
   const [chatInput, setChatInput] = useState("");
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const userLabel = user?.companyName ?? user?.email ?? "your team";
   const hasCases = cases.length > 0;
   const hasActiveCase = Boolean(activeCase);
@@ -119,6 +150,22 @@ const AssistantWorkspaceContent = ({ user }) => {
     if (!file) return;
     await uploadDocument(file);
     event.target.value = "";
+  };
+
+  const handleModalUpload = async (event) => {
+    try {
+      await handleDocumentUpload(event);
+      setShowUploadModal(false);
+    } catch {
+      // errors propagate via assistant context; keep modal open for retry
+    }
+  };
+
+  const openUploadModal = () => setShowUploadModal(true);
+  const closeUploadModal = () => {
+    if (!uploading) {
+      setShowUploadModal(false);
+    }
   };
 
   const recentPaperwork = paperwork ?? paperworkLog?.[0] ?? null;
@@ -276,23 +323,15 @@ const AssistantWorkspaceContent = ({ user }) => {
                     />
                   </div>
                   <div className="case-manager__support">
-                    <section className="case-support-card">
+                    <section className="case-support-card case-collab-card">
                       <header>
-                        <h5>Upload documents</h5>
-                        <p className="muted">Share context with the assistant and attorneys.</p>
+                        <h5>AI collaboration hub</h5>
+                        <p className="muted">
+                          Keep your matter moving—ask LexiFlow for guidance and attach supporting files without leaving the
+                          thread.
+                        </p>
                       </header>
-                      <label className="upload-dropzone">
-                        <input type="file" onChange={handleDocumentUpload} disabled={uploading} />
-                        <span>{uploading ? "Processing upload..." : "Click or drop files to add them"}</span>
-                      </label>
-                      {error ? <p className="error-text">{error}</p> : null}
-                    </section>
-                    <section className="case-support-card">
-                      <header>
-                        <h5>AI conversation</h5>
-                        <p className="muted">Ask for next steps or summaries and keep the case thread alive.</p>
-                      </header>
-                      <div className="case-chat">
+                      <div className="case-chat case-collab-card__chat">
                         <div className="case-chat__messages">
                           {messages.slice(-5).map((message) => (
                             <article
@@ -308,6 +347,14 @@ const AssistantWorkspaceContent = ({ user }) => {
                           ))}
                         </div>
                         <form className="case-chat__composer" onSubmit={handleChatSubmit}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary case-chat__upload-btn"
+                            onClick={openUploadModal}
+                            disabled={uploading}
+                          >
+                            Upload
+                          </button>
                           <input
                             className="input"
                             type="text"
@@ -321,6 +368,7 @@ const AssistantWorkspaceContent = ({ user }) => {
                           </button>
                         </form>
                       </div>
+                      {error && !showUploadModal ? <p className="error-text">{error}</p> : null}
                     </section>
                     <section className="case-support-card">
                       <header>
@@ -369,6 +417,13 @@ const AssistantWorkspaceContent = ({ user }) => {
         )}
       </section>
       <CaseCreatedModal caseData={newlyCreatedCase} onClose={closeCaseCreatedModal} />
+      <DocumentUploadModal
+        open={showUploadModal}
+        onClose={closeUploadModal}
+        onUpload={handleModalUpload}
+        uploading={uploading}
+        error={error}
+      />
     </div>
   );
 };

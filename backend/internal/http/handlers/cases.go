@@ -108,8 +108,8 @@ type caseLawyerResponse struct {
 	Notes       string    `json:"notes,omitempty"`
 }
 
-func NewCaseHandler(db *gorm.DB, auth *AuthHandler, uploadDir string) *CaseHandler {
-	return &CaseHandler{db: db, auth: auth, uploadDir: uploadDir}
+func NewCaseHandler(db *gorm.DB, auth *AuthHandler) *CaseHandler {
+	return &CaseHandler{db: db, auth: auth}
 }
 
 func (h *CaseHandler) RegisterRoutes(router *gin.RouterGroup) {
@@ -194,7 +194,7 @@ func (h *CaseHandler) handleCreateCase(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, h.toCaseResponse(&caseModel, false))
+	ctx.JSON(http.StatusCreated, toCaseResponse(&caseModel, false))
 }
 
 func (h *CaseHandler) handleListCases(ctx *gin.Context) {
@@ -225,7 +225,7 @@ func (h *CaseHandler) handleListCases(ctx *gin.Context) {
 
 	payload := make([]caseResponse, 0, len(cases))
 	for i := range cases {
-		payload = append(payload, h.toCaseResponse(&cases[i], user.Role == models.UserRoleLawyer))
+		payload = append(payload, toCaseResponse(&cases[i], user.Role == models.UserRoleLawyer))
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"cases": payload})
@@ -266,7 +266,7 @@ func (h *CaseHandler) handleGetCase(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"case": h.toCaseResponse(&caseModel, user.Role == models.UserRoleLawyer)})
+	ctx.JSON(http.StatusOK, gin.H{"case": toCaseResponse(&caseModel, user.Role == models.UserRoleLawyer)})
 }
 
 func (h *CaseHandler) handleDeleteCase(ctx *gin.Context) {
@@ -653,7 +653,7 @@ func toCaseDocumentModel(payload caseDocumentPayload, defaultCategory string) mo
 	}
 }
 
-func (h *CaseHandler) toCaseResponse(model *models.Case, includeClient bool) caseResponse {
+func toCaseResponse(model *models.Case, includeClient bool) caseResponse {
 	resp := caseResponse{
 		ID:         model.ID,
 		Name:       model.Name,

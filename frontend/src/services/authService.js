@@ -4,11 +4,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080
 
 const request = async (path, options = {}) => {
   const session = readSession();
-  const isFormData = options.body instanceof FormData;
-  const headers = { ...(options.headers ?? {}) };
-  if (!isFormData && !headers["Content-Type"]) {
-    headers["Content-Type"] = "application/json";
-  }
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers ?? {})
+  };
   if (session?.sessionToken) {
     headers.Authorization = `Bearer ${session.sessionToken}`;
   }
@@ -116,3 +115,5 @@ export const updateSubscription = async ({ email, plan }) => {
   persistSession(normalised);
   return normalised;
 };
+
+export const apiRequest = request;

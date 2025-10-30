@@ -80,6 +80,12 @@ const Dashboard = () => {
     }
   }, [isAuthenticated, status, navigate]);
 
+  useEffect(() => {
+    if (user?.role === "lawyer") {
+      navigate("/lawyer/cases", { replace: true });
+    }
+  }, [user, navigate]);
+
   const currentPlan = useMemo(
     () => subscriptionTiers.find((plan) => plan.id === user?.subscription) ?? subscriptionTiers[0],
     [user]

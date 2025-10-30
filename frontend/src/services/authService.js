@@ -3,8 +3,6 @@ const SESSION_KEY = "lexiflow:session";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
 
 const request = async (path, options = {}) => {
-<<<<<<< Updated upstream
-=======
   const session = readSession();
   const isFormData = options.body instanceof FormData;
   const headers = { ...(options.headers ?? {}) };
@@ -15,12 +13,9 @@ const request = async (path, options = {}) => {
     headers.Authorization = `Bearer ${session.sessionToken}`;
   }
 
->>>>>>> Stashed changes
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {})
-    },
+    headers,
+    credentials: "include",
     ...options
   });
 
@@ -66,25 +61,31 @@ export const clearSession = () => {
 
 const normaliseUser = (payload) => {
   if (!payload) return null;
+  const stored = readSession();
+  const sessionToken = payload.sessionToken ?? stored?.sessionToken ?? null;
   return {
     id: payload.id,
     companyName: payload.companyName,
     email: payload.email,
     verified: Boolean(payload.verified),
     subscription: payload.subscription ?? "starter",
-    createdAt: payload.createdAt
+    role: payload.role ?? stored?.role ?? "client",
+    createdAt: payload.createdAt,
+    sessionToken
   };
 };
 
-export const register = async ({ companyName, email, password, plan }) => {
+export const register = async ({ companyName, email, password, plan, role }) => {
   const { user } = await request("/auth/register", {
     method: "POST",
-    body: JSON.stringify({ companyName, email, password, plan })
+    body: JSON.stringify({ companyName, email, password, plan, role })
   });
   const normalised = normaliseUser(user);
   persistSession(normalised);
   return normalised;
 };
+
+export const apiRequest = request;
 
 export const login = async ({ email, password }) => {
   const { user } = await request("/auth/login", {

@@ -9,21 +9,22 @@ import (
 )
 
 type Case struct {
-	ID         uuid.UUID         `gorm:"type:uuid;primaryKey"`
-	UserID     uuid.UUID         `gorm:"type:uuid;not null;index"`
-	Name       string            `gorm:"size:255;not null"`
-	Priority   string            `gorm:"size:32;not null;default:Medium"`
-	Status     string            `gorm:"size:32;not null;default:Draft"`
-	MatterType string            `gorm:"size:255"`
-	Owner      string            `gorm:"size:255"`
-	Summary    string            `gorm:"type:text"`
-	AIFocus    string            `gorm:"size:255"`
-	AIContext  datatypes.JSONMap `gorm:"type:jsonb"`
-	Metadata   datatypes.JSONMap `gorm:"type:jsonb"`
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	User       User           `gorm:"constraint:OnDelete:CASCADE;"`
-	Documents  []CaseDocument `gorm:"constraint:OnDelete:CASCADE;"`
+	ID          uuid.UUID         `gorm:"type:uuid;primaryKey"`
+	UserID      uuid.UUID         `gorm:"type:uuid;not null;index"`
+	Name        string            `gorm:"size:255;not null"`
+	Priority    string            `gorm:"size:32;not null;default:Medium"`
+	Status      string            `gorm:"size:32;not null;default:Draft"`
+	MatterType  string            `gorm:"size:255"`
+	Owner       string            `gorm:"size:255"`
+	Summary     string            `gorm:"type:text"`
+	AIFocus     string            `gorm:"size:255"`
+	AIContext   datatypes.JSONMap `gorm:"type:jsonb"`
+	Metadata    datatypes.JSONMap `gorm:"type:jsonb"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	User        User             `gorm:"constraint:OnDelete:CASCADE;"`
+	Documents   []CaseDocument   `gorm:"constraint:OnDelete:CASCADE;"`
+	Assignments []CaseAssignment `gorm:"constraint:OnDelete:CASCADE;"`
 }
 
 func (c *Case) BeforeCreate(_ *gorm.DB) error {
@@ -51,6 +52,24 @@ type CaseDocument struct {
 func (d *CaseDocument) BeforeCreate(_ *gorm.DB) error {
 	if d.ID == uuid.Nil {
 		d.ID = uuid.New()
+	}
+	return nil
+}
+
+type CaseAssignment struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
+	CaseID    uuid.UUID `gorm:"type:uuid;not null;index:idx_case_lawyer,priority:1"`
+	LawyerID  uuid.UUID `gorm:"type:uuid;not null;index:idx_case_lawyer,priority:2"`
+	Notes     string    `gorm:"size:512"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Case      Case `gorm:"constraint:OnDelete:CASCADE;"`
+	Lawyer    User `gorm:"constraint:OnDelete:CASCADE;"`
+}
+
+func (a *CaseAssignment) BeforeCreate(_ *gorm.DB) error {
+	if a.ID == uuid.Nil {
+		a.ID = uuid.New()
 	}
 	return nil
 }

@@ -12,6 +12,7 @@ const loginSchema = z.object({
 export const LoginForm = () => {
   const { login, isLoading, error } = useAuth();
   const [demoLoading, setDemoLoading] = useState(false);
+  const [accountType, setAccountType] = useState("client");
   const {
     handleSubmit,
     register,
@@ -25,13 +26,18 @@ export const LoginForm = () => {
   });
 
   const onSubmit = async (values) => {
-    await login(values);
+    try {
+      await login(values, accountType);
+    } catch {
+      // error state handled via auth context
+    }
   };
 
   const handleDemoLogin = async () => {
+    if (accountType === "lawyer") return;
     setDemoLoading(true);
     try {
-      await login({ email: "legal@nebulalabs.io", password: "LexiFlow#2024" });
+      await login({ email: "legal@nebulalabs.io", password: "LexiFlow#2024" }, accountType);
     } finally {
       setDemoLoading(false);
     }
@@ -39,6 +45,28 @@ export const LoginForm = () => {
 
   return (
     <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
+      <div className="account-switcher" role="tablist" aria-label="Select workspace type">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={accountType === "client"}
+          className={`account-switcher__option${accountType === "client" ? " account-switcher__option--active" : ""}`}
+          onClick={() => setAccountType("client")}
+        >
+          <span className="account-switcher__label">Legal service user</span>
+          <span className="account-switcher__helper">Manage matters, documents, and AI workspace</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={accountType === "lawyer"}
+          className={`account-switcher__option${accountType === "lawyer" ? " account-switcher__option--active" : ""}`}
+          onClick={() => setAccountType("lawyer")}
+        >
+          <span className="account-switcher__label">Lawyer</span>
+          <span className="account-switcher__helper">Review assigned cases and client files</span>
+        </button>
+      </div>
       <label className="form-label">
         Work email
         <input className="input" type="email" placeholder="you@company.com" {...register("email")} />
@@ -56,15 +84,19 @@ export const LoginForm = () => {
         <a href="#">Forgot password?</a>
       </div>
       <button className="btn btn-primary" type="submit" disabled={isLoading || demoLoading}>
-        {isLoading ? "Signing you in..." : "Sign in"}
+        {isLoading ? "Signing you in..." : accountType === "lawyer" ? "Sign in as lawyer" : "Sign in"}
       </button>
       <button
         className="btn btn-secondary"
         type="button"
         onClick={handleDemoLogin}
-        disabled={isLoading || demoLoading}
+        disabled={isLoading || demoLoading || accountType === "lawyer"}
       >
-        {demoLoading ? "Loading demo workspace..." : "Use demo workspace"}
+        {accountType === "lawyer"
+          ? "Request lawyer demo access"
+          : demoLoading
+          ? "Loading demo workspace..."
+          : "Use demo workspace"}
       </button>
       {error ? <p className="error-text">{error}</p> : null}
     </form>

@@ -44,14 +44,23 @@ export const AuthProvider = ({ children }) => {
     setInitialised(true);
   }, []);
 
-  const handleLogin = useCallback(async (credentials) => {
+  const handleLogin = useCallback(async (credentials, expectedRole) => {
     dispatch({ type: "LOGIN_REQUEST" });
     try {
       const user = await login(credentials);
+      if (expectedRole && user.role && user.role !== expectedRole) {
+        clearSession();
+        const message = expectedRole === "lawyer"
+          ? "This account is not registered as a lawyer workspace."
+          : "This account is not registered as a legal service workspace.";
+        dispatch({ type: "ERROR", payload: message });
+        throw new Error(message);
+      }
       dispatch({ type: "LOGIN_SUCCESS", payload: user });
       return user;
     } catch (error) {
-      dispatch({ type: "ERROR", payload: error.message });
+      const message = error?.message ?? "Unable to sign in";
+      dispatch({ type: "ERROR", payload: message });
       throw error;
     }
   }, []);

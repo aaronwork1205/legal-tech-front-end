@@ -58,6 +58,7 @@ type userResponse struct {
 	Email        string    `json:"email"`
 	Verified     bool      `json:"verified"`
 	Subscription string    `json:"subscription"`
+	Role         string    `json:"role"`
 	CreatedAt    string    `json:"createdAt"`
 }
 
@@ -327,6 +328,7 @@ func toUserResponse(user *models.User) userResponse {
 		Email:        user.Email,
 		Verified:     user.Verified,
 		Subscription: user.Subscription,
+		Role:         user.Role,
 		CreatedAt:    user.CreatedAt.UTC().Format(time.RFC3339),
 	}
 }
